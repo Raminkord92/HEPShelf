@@ -74,6 +74,18 @@ if(UNIX AND NOT APPLE)
     install(FILES packaging/hepshelf.svg
         DESTINATION share/icons/hicolor/scalable/apps
     )
+
+    set(CPACK_GENERATOR "DEB")
+    set(CPACK_PACKAGE_NAME "hepshelf")
+    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Local research paper library and PDF reader")
+    set(CPACK_PACKAGE_VENDOR "HEPShelf contributors")
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "HEPShelf contributors")
+    set(CPACK_DEBIAN_PACKAGE_SECTION "science")
+    set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
+    set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libqt6sql6-sqlite")
+    set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "poppler-utils")
+    include(CPack)
 endif()
 
 include(CTest)

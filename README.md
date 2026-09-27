@@ -2,6 +2,18 @@
 
 HEPShelf is a native local research-paper library aimed at high-energy-physics workflows. It indexes only folders selected by the user, recognizes arXiv papers, caches metadata in SQLite, provides an integrated PDF reader, organizes papers with tags and collections, searches and downloads from arXiv, and uses INSPIRE for HEP citation metadata and BibTeX.
 
+## Install on Linux
+
+Download the `.deb` installer from this repository's **Releases** page. It is built for Ubuntu 24.04 and compatible Linux Mint 22 systems on x86-64. Install it with:
+
+```bash
+sudo apt install ./hepshelf_*.deb
+```
+
+Launch **HEPShelf** from the application menu or run `hepshelf`. Package dependencies, including Qt, are installed by APT. The optional `poppler-utils` package helps recognize arXiv IDs in renamed PDFs. Library data stays in the user's home directory and is preserved when the package is upgraded or removed.
+
+The release workflow builds, tests, and packages the application. It attaches the installer to version tags and keeps packages from manual runs as GitHub Actions artifacts.
+
 Version **0.9** adds a persistent research layer on top of the citation-aware library: **local paper notes** and **named literature trails**. A trail is an ordered reading/research path that may contain papers already on your laptop as well as remote arXiv or INSPIRE records discovered in the citation graph.
 
 ## New in 0.9 — research notes
@@ -329,6 +341,12 @@ Or install system-wide:
 
 ```bash
 sudo cmake --install build
+```
+
+To build a local Debian installer after building, run:
+
+```bash
+cpack --config build/CPackConfig.cmake -G DEB -B dist
 ```
 
 ## Upgrade from 0.1–0.8
