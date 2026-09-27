@@ -1,0 +1,47 @@
+name: macOS build
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    runs-on: macos-15-intel
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.3'
+          host: mac
+          target: desktop
+          arch: clang_64
+          modules: qtpdf
+          cache: true
+      - name: Configure universal build
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES='x86_64;arm64' -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR"
+      - name: Build
+        run: cmake --build build --parallel 2
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+      - name: Bundle Qt and create disk image
+        run: |
+          mkdir -p dist
+          cp -R build/hepshelf.app dist/HEPShelf.app
+          (cd dist && macdeployqt HEPShelf.app -dmg)
+          test -f dist/HEPShelf.app/Contents/MacOS/hepshelf
+          test -d dist/HEPShelf.app/Contents/Frameworks/QtPdf.framework
+          test -f dist/HEPShelf.app/Contents/PlugIns/sqldrivers/libqsqlite.dylib
+          lipo -archs dist/HEPShelf.app/Contents/MacOS/hepshelf | grep -q x86_64
+          lipo -archs dist/HEPShelf.app/Contents/MacOS/hepshelf | grep -q arm64
+          mv dist/HEPShelf.dmg dist/HEPShelf-macOS-universal.dmg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HEPShelf-macOS-universal
+          path: dist/HEPShelf-macOS-universal.dmg
+          if-no-files-found: error
