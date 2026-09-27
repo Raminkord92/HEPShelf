@@ -1,0 +1,60 @@
+name: Publish desktop release assets
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag
+        required: true
+        default: v0.9.0
+      windows_run_id:
+        description: Successful Windows build run ID
+        required: true
+        default: '36299344149'
+      macos_run_id:
+        description: Successful macOS build run ID
+        required: true
+        default: '36299563666'
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download and inspect desktop packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          WINDOWS_RUN_ID: ${{ inputs.windows_run_id }}
+          MACOS_RUN_ID: ${{ inputs.macos_run_id }}
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          [[ "$WINDOWS_RUN_ID" =~ ^[0-9]+$ ]]
+          [[ "$MACOS_RUN_ID" =~ ^[0-9]+$ ]]
+          test "$(gh run view "$WINDOWS_RUN_ID" --repo "$GITHUB_REPOSITORY" --json conclusion --jq .conclusion)" = success
+          test "$(gh run view "$MACOS_RUN_ID" --repo "$GITHUB_REPOSITORY" --json conclusion --jq .conclusion)" = success
+          mkdir -p dist/windows dist/macos
+          gh run download "$WINDOWS_RUN_ID" --repo "$GITHUB_REPOSITORY" --name HEPShelf-windows-x64 --dir dist/windows
+          gh run download "$MACOS_RUN_ID" --repo "$GITHUB_REPOSITORY" --name HEPShelf-macOS-universal --dir dist/macos
+          test -s dist/windows/HEPShelf-windows-x64.zip
+          test -s dist/macos/HEPShelf-macOS-universal.dmg
+          unzip -t dist/windows/HEPShelf-windows-x64.zip
+          unzip -Z1 dist/windows/HEPShelf-windows-x64.zip | grep -q 'HEPShelf/hepshelf.exe'
+          unzip -Z1 dist/windows/HEPShelf-windows-x64.zip | grep -q 'HEPShelf/platforms/qwindows.dll'
+          unzip -Z1 dist/windows/HEPShelf-windows-x64.zip | grep -q 'HEPShelf/sqldrivers/qsqlite.dll'
+          file dist/macos/HEPShelf-macOS-universal.dmg
+          sha256sum dist/windows/HEPShelf-windows-x64.zip dist/macos/HEPShelf-macOS-universal.dmg
+      - name: Add packages and release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          gh release upload "$RELEASE_TAG" dist/windows/HEPShelf-windows-x64.zip dist/macos/HEPShelf-macOS-universal.dmg --repo "$GITHUB_REPOSITORY"
+          gh release edit "$RELEASE_TAG" --notes-file .github/release-notes-v0.9.0.md --repo "$GITHUB_REPOSITORY"
+          gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' --repo "$GITHUB_REPOSITORY"

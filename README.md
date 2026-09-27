@@ -16,11 +16,11 @@ The release workflow builds, tests, and packages the application. It attaches th
 
 ## Try the Windows build
 
-The **Windows build** GitHub Actions workflow creates a 64-bit ZIP artifact for testing. Download it from the latest successful workflow run, extract both ZIP layers, and launch `HEPShelf/hepshelf.exe`. Keep the bundled DLLs and plugin folders beside the executable. If Windows reports a missing Microsoft C++ runtime, install the current [Microsoft Visual C++ Redistributable (x64)](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist) and try again. This Windows build has not yet been tested on a user's PC.
+The **Windows build** GitHub Actions workflow creates a 64-bit ZIP. Download it from this repository's **Releases** page, extract it, and launch `HEPShelf/hepshelf.exe`. Keep the bundled DLLs and plugin folders beside the executable. If Windows reports a missing Microsoft C++ runtime, install the current [Microsoft Visual C++ Redistributable (x64)](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist) and try again. The package has been tested on Windows by the project owner.
 
 ## Try the macOS build
 
-The **macOS build** GitHub Actions workflow creates a universal disk image for Intel and Apple Silicon Macs. Download the `HEPShelf-macOS-universal` artifact from the latest successful run, extract the downloaded ZIP, open the `.dmg`, and copy HEPShelf to Applications. This is an unsigned test build and has not yet been notarized or tested on a user's Mac.
+The **macOS build** GitHub Actions workflow creates a universal disk image for Intel and Apple Silicon Macs. Download the `.dmg` from this repository's **Releases** page, open it, and copy HEPShelf to Applications. This is an unsigned test build and has not yet been notarized or tested on a user's Mac.
 
 HEPShelf includes **local paper notes** and **named literature trails**. A trail is an ordered reading/research path that may contain papers already on your laptop as well as remote arXiv or INSPIRE records discovered in the citation graph.
 
