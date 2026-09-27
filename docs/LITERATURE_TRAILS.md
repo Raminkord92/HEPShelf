@@ -58,15 +58,15 @@ For example:
 
 ```text
 Global paper note:
-"Good derivation of the unequal-scale DPD sum rule; check Eq. 27."
+"Useful derivation of the main result; check section 2."
 
-Trail: QCD Extreme talk
+Trail: Presentation reading list
 Item note:
-"Use only Fig. 2 on the motivation slide."
+"Use the overview figure on the introduction slide."
 
-Trail: DPD evolution reading
+Trail: Methods comparison
 Item note:
-"Read after Gaunt 2010; this is where the boundary condition becomes clearer."
+"Read after the introductory paper for a more detailed explanation."
 ```
 
 ## Building a trail from the citation network

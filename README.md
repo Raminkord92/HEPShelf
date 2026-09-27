@@ -1,7 +1,5 @@
 # HEPShelf 0.9.0
 
-[Project website](https://raminkord92.github.io/HEPShelf/) · [Source code](https://github.com/Raminkord92/HEPShelf)
-
 HEPShelf is a native local research-paper library aimed at high-energy-physics workflows. It indexes only folders selected by the user, recognizes arXiv papers, caches metadata in SQLite, provides an integrated PDF reader, organizes papers with tags and collections, searches and downloads from arXiv, and uses INSPIRE for HEP citation metadata and BibTeX.
 
 Version **0.9** adds a persistent research layer on top of the citation-aware library: **local paper notes** and **named literature trails**. A trail is an ordered reading/research path that may contain papers already on your laptop as well as remote arXiv or INSPIRE records discovered in the citation graph.
@@ -13,9 +11,9 @@ Each local paper now has a **Research notes** editor in the details pane. Notes 
 Notes are included in library search, so a remembered phrase such as:
 
 ```text
-momentum sum rule
-heavy-quark threshold
-use this figure in QCD Extreme
+key result to revisit
+compare with related work
+compare the methods in section 3
 ```
 
 can find the paper even when those words are not present in its title or metadata.
@@ -32,13 +30,13 @@ Ctrl+Shift+T
 A trail is an ordered sequence such as:
 
 ```text
-KMR foundations
+Foundational paper
    ↓
-MRW prescription
+Follow-up method
    ↓
-TMD phenomenology
+Comparison study
    ↓
-nuclear MRW application
+Recent application
 ```
 
 Unlike a normal collection, order matters. Trails can also contain remote papers that are not downloaded yet.
@@ -127,11 +125,11 @@ HEPShelf keeps a hard in-memory graph cap of 400 nodes for one explorer session.
 This makes workflows such as the following practical:
 
 ```text
-Gaunt 2010
+Foundational paper
    ↓ expand cited by
-Diehl 2012
+Follow-up paper
    ↓ expand cited by
-later DPS phenomenology
+Recent study
    ↓ expand references
 related formalism
 ```

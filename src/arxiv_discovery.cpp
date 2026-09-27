@@ -118,7 +118,7 @@ void ArxivDiscoveryDialog::buildUi()
 
     queryEdit_ = new QLineEdit(this);
     queryEdit_->setClearButtonEnabled(true);
-    queryEdit_->setPlaceholderText(QStringLiteral("e.g. Jonathan Gaunt, double parton distributions, hep-ph, or 2609.14048"));
+    queryEdit_->setPlaceholderText(QStringLiteral("e.g. an author, paper title, category, or arXiv ID"));
 
     sortCombo_ = new QComboBox(this);
     sortCombo_->addItem(QStringLiteral("Relevance"), QStringLiteral("relevance|descending"));
@@ -142,8 +142,8 @@ void ArxivDiscoveryDialog::buildUi()
     root->addLayout(searchRow);
 
     auto *example = new QLabel(
-        QStringLiteral("Examples: Author = “Jonathan R. Gaunt” · Title = “double parton distributions” · "
-                       "Category = “hep-ph” · Advanced = au:\"Gaunt, J R\" AND cat:hep-ph"),
+        QStringLiteral("Examples: Author = “Smith” · Title = “particle physics” · "
+                       "Category = “hep-ph” · Advanced = au:\"Smith\" AND cat:hep-ph"),
         this);
     example->setObjectName(QStringLiteral("discoverHint"));
     example->setWordWrap(true);
@@ -238,7 +238,7 @@ void ArxivDiscoveryDialog::buildUi()
         else if (field == SearchField::ExactId)
             queryEdit_->setPlaceholderText(QStringLiteral("e.g. 2609.14048 or hep-ph/9901234"));
         else if (field == SearchField::Advanced)
-            queryEdit_->setPlaceholderText(QStringLiteral("e.g. au:\"Gaunt, J R\" AND cat:hep-ph"));
+            queryEdit_->setPlaceholderText(QStringLiteral("e.g. au:\"Smith\" AND cat:hep-ph"));
         else
             queryEdit_->setPlaceholderText(QStringLiteral("Search arXiv…"));
     });
