@@ -1,4 +1,4 @@
-# HEPShelf 0.9.0
+# HEPShelf
 
 HEPShelf is a native local research-paper library aimed at high-energy-physics workflows. It indexes only folders selected by the user, recognizes arXiv papers, caches metadata in SQLite, provides an integrated PDF reader, organizes papers with tags and collections, searches and downloads from arXiv, and uses INSPIRE for HEP citation metadata and BibTeX.
 
@@ -14,9 +14,9 @@ Launch **HEPShelf** from the application menu or run `hepshelf`. Package depende
 
 The release workflow builds, tests, and packages the application. It attaches the installer to version tags and keeps packages from manual runs as GitHub Actions artifacts.
 
-Version **0.9** adds a persistent research layer on top of the citation-aware library: **local paper notes** and **named literature trails**. A trail is an ordered reading/research path that may contain papers already on your laptop as well as remote arXiv or INSPIRE records discovered in the citation graph.
+HEPShelf includes **local paper notes** and **named literature trails**. A trail is an ordered reading/research path that may contain papers already on your laptop as well as remote arXiv or INSPIRE records discovered in the citation graph.
 
-## New in 0.9 — research notes
+## Research notes
 
 Each local paper now has a **Research notes** editor in the details pane. Notes are stored only in the local HEPShelf SQLite database and autosave after a short pause while typing. `Ctrl+S` forces an immediate save.
 
@@ -30,7 +30,7 @@ compare the methods in section 3
 
 can find the paper even when those words are not present in its title or metadata.
 
-## New in 0.9 — named literature trails
+## Named literature trails
 
 Open:
 
@@ -80,21 +80,7 @@ This works for both local nodes and remote arXiv/INSPIRE nodes. You can therefor
 
 A selected local paper can also be added from the details pane or table context menu using **Add to literature trail…**.
 
-## Data migration
-
-No database reset is required. HEPShelf 0.9 adds three non-destructive tables:
-
-```text
-paper_notes
-literature_trails
-literature_trail_items
-```
-
-Existing PDFs, metadata, tags, collections, reading progress, citation caches, and arXiv/INSPIRE data are preserved.
-
-## Also included — 0.8 multi-hop citation explorer
-
-### Multi-hop citation explorer
+## Multi-hop citation explorer
 
 Use:
 
@@ -186,7 +172,7 @@ The INSPIRE citation count remains the authoritative total displayed by HEPShelf
 
 ## Citation-aware PDF reader
 
-The 0.6 reader remains available. While reading a paper, HEPShelf detects common numeric citation callouts on the current PDF page, including:
+While reading a paper, HEPShelf detects common numeric citation callouts on the current PDF page, including:
 
 ```text
 [12]
@@ -349,23 +335,13 @@ To build a local Debian installer after building, run:
 cpack --config build/CPackConfig.cmake -G DEB -B dist
 ```
 
-## Upgrade from 0.1–0.8
-
-No database reset is required. HEPShelf 0.9 migrates the database automatically and preserves all existing library and citation data.
-
-Typical Linux database location:
-
-```text
-~/.local/share/HEPShelf/HEPShelf/library.sqlite
-```
-
 ## Data sources
 
 HEPShelf uses arXiv for paper discovery/PDF acquisition and INSPIRE for HEP citation metadata. Cited-by discovery uses INSPIRE's citation search for papers referring to a literature record.
 
 ## Scope of the graph
 
-HEPShelf 0.9 supports manual multi-hop exploration, but it intentionally does **not** recursively crawl the whole citation network. Expansion is explicit, batched, and capped per session. This keeps classic or highly cited HEP papers usable in the graph instead of turning the view into an unreadable mass of nodes.
+HEPShelf supports manual multi-hop exploration, but it intentionally does **not** recursively crawl the whole citation network. Expansion is explicit, batched, and capped per session. This keeps classic or highly cited HEP papers usable in the graph instead of turning the view into an unreadable mass of nodes.
 
 ## License
 
