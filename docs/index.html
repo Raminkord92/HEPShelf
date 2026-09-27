@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1323">
+  <meta name="description" content="HEPShelf is a local-first desktop library for high-energy physics papers. Read, organize, explore citations, and follow new research in one place.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="HEPShelf — Your research, connected">
+  <meta property="og:description" content="A native paper library for reading, organizing, and exploring high-energy physics research.">
+  <meta property="og:url" content="https://raminkord92.github.io/HEPShelf/">
+  <title>HEPShelf — Your research, connected</title>
+  <link rel="icon" type="image/svg+xml" href="assets/hepshelf.svg">
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header wrap" id="top">
+    <a class="brand" href="#top" aria-label="HEPShelf home"><img src="assets/hepshelf.svg" width="38" height="38" alt=""><span>HEP<span>Shelf</span></span></a>
+    <nav aria-label="Main navigation"><a href="#features">Features</a><a href="#workflow">How it works</a><a href="#get-started">Get started</a></nav>
+    <a class="header-github" href="https://github.com/Raminkord92/HEPShelf" aria-label="View HEPShelf on GitHub">GitHub <span aria-hidden="true">↗</span></a>
+  </header>
+  <main id="main">
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <div class="eyebrow"><i></i> NATIVE DESKTOP RESEARCH LIBRARY <b>V0.9</b></div>
+        <h1 id="hero-title">Your research,<br><span>connected.</span></h1>
+        <p class="hero-lede">One calm place for the papers you read, the ideas you follow, and the citations that lead you somewhere new.</p>
+        <p class="hero-detail">HEPShelf brings your local PDFs together with arXiv discovery and INSPIRE citation data, built for high-energy physics workflows.</p>
+        <div class="actions"><a class="button primary" href="#get-started">Get started <span aria-hidden="true">↗</span></a><a class="button secondary" href="https://github.com/Raminkord92/HEPShelf">Explore the source <span aria-hidden="true">→</span></a></div>
+        <div class="hero-note">◈ &nbsp; Your PDFs stay in folders you choose <span>·</span> Built with Qt 6</div>
+      </div>
+      <div class="hero-art" role="img" aria-label="Illustration of a paper library with a citation alert and literature trail">
+        <div class="orbit"></div>
+        <div class="app-window">
+          <div class="window-bar"><div class="dots"><i></i><i></i><i></i></div><strong>HEPShelf</strong><small>LIBRARY / 0.9</small></div>
+          <div class="app-body"><aside><span class="aside-label">WORKSPACE</span><div class="side-item selected">▦ &nbsp; All papers <em>128</em></div><div class="side-item">☆ &nbsp; Favorites</div><span class="aside-label second">RESEARCH</span><div class="side-item">◇ &nbsp; Literature trails</div><div class="side-item">◎ &nbsp; Citation network</div><div class="side-item">◉ &nbsp; Watches</div></aside>
+            <div class="app-content"><div class="app-heading"><div><small>YOUR LIBRARY</small><strong>Papers, in context</strong></div><span>128 papers</span></div><div class="mock-search">⌕ &nbsp; Search titles, authors, notes…</div><div class="table-head"><span>TITLE</span><span>YEAR</span><span>STATUS</span></div><div class="paper-row"><div><b>Transverse momentum in QCD</b><small>J. Collins · hep-ph</small></div><span>2024</span><em>LOCAL</em></div><div class="paper-row active"><div><b>Parton distributions at high energy</b><small>A. Martin et al. · hep-ph</small></div><span>2025</span><em>READING</em></div><div class="paper-row"><div><b>A phenomenological study of TMDs</b><small>M. Kimber et al. · hep-ph</small></div><span>2026</span><em>LOCAL</em></div></div>
+          </div>
+        </div>
+        <div class="float-card citation"><div class="float-icon">↗</div><div><small>CITATION WATCH</small><strong>New citing paper found</strong><span>Follow the next connection</span></div><i></i></div>
+        <div class="float-card trail"><div class="trail-nodes">●━●━●</div><div><small>LITERATURE TRAIL</small><strong>3 papers connected</strong></div></div>
+      </div>
+    </section>
+    <div class="source-strip"><div class="wrap source-inner"><span>BUILT AROUND THE TOOLS RESEARCHERS ALREADY USE</span><div><strong>arXiv</strong><strong>INSPIRE</strong><strong>SQLite</strong><strong>Qt 6</strong></div></div></div>
+    <section class="features wrap" id="features" aria-labelledby="features-title"><div class="section-intro"><div><span class="kicker">A MORE CONNECTED LIBRARY</span><h2 id="features-title">From PDF folder<br>to research workspace.</h2></div><p>Keep the familiar files on your computer, with the context and connections that make them useful.</p></div><div class="feature-grid">
+      <article class="feature-card wide"><span class="symbol">▤</span><div><small>01 / READ</small><h3>Own your library.</h3><p>Index folders you choose, search papers and notes, and read PDFs in a native viewer. Your library metadata lives in local SQLite.</p></div><div class="decoration"><span>PDF</span><span>NOTES</span><span>METADATA</span></div></article>
+      <article class="feature-card"><span class="symbol violet">✧</span><small>02 / DISCOVER</small><h3>Follow the references.</h3><p>Explore references and cited-by papers with INSPIRE data, then expand the citation map one step at a time.</p><div class="network" aria-hidden="true">●━━●━━●</div></article>
+      <article class="feature-card"><span class="symbol mint">◎</span><small>03 / STAY CURRENT</small><h3>Let new work find you.</h3><p>Watch arXiv authors and categories or follow citations to a paper. Review new matches and optionally download available PDFs.</p><div class="watch-chip"><i></i> Daily research watches</div></article>
+      <article class="feature-card"><span class="symbol blue">◇</span><small>04 / ORGANIZE</small><h3>Give ideas a path.</h3><p>Build ordered literature trails, keep paper-specific notes, and move selected or all PDFs using metadata templates.</p><div class="template">{author} / {year} / {title}.pdf</div></article>
+    </div></section>
+    <section class="workflow" id="workflow" aria-labelledby="workflow-title"><div class="wrap workflow-inner"><div><span class="kicker">ONE CONTINUOUS FLOW</span><h2 id="workflow-title">Read a paper.<br>Find the next one.</h2><p>HEPShelf is designed around what happens after you open a PDF: following references, keeping a thought, and returning to the work that matters.</p><a class="text-link" href="https://github.com/Raminkord92/HEPShelf/blob/main/README.md">Explore the full feature guide ↗</a></div><ol><li><span>01</span><div><h3>Collect</h3><p>Point HEPShelf at your paper folders or discover a paper on arXiv.</p></div></li><li><span>02</span><div><h3>Connect</h3><p>Open its references, cited-by list, and expandable citation graph.</p></div></li><li><span>03</span><div><h3>Continue</h3><p>Write a note, save a literature trail, or watch for new citations.</p></div></li></ol></div></section>
+    <section class="get-started wrap" id="get-started" aria-labelledby="start-title"><div><span class="kicker">READY TO EXPLORE?</span><h2 id="start-title">Make room for the next discovery.</h2><p>HEPShelf is an open-source Qt desktop app. Build it on Linux Mint or Ubuntu and point it at the PDFs you already have.</p><div class="actions"><a class="button primary" href="https://github.com/Raminkord92/HEPShelf">View on GitHub ↗</a><a class="button outline" href="https://github.com/Raminkord92/HEPShelf#build-on-linux-mint--ubuntu">Build instructions →</a></div></div><div class="terminal" aria-label="Build commands"><div class="terminal-bar"><i></i><i></i><i></i><span>terminal</span></div><pre><code><span>$</span> cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+<span>$</span> cmake --build build -j
+<span>$</span> ./build/hepshelf</code></pre></div></section>
+  </main>
+  <footer><div class="wrap footer-main"><div><a class="brand" href="#top"><img src="assets/hepshelf.svg" width="32" height="32" alt=""><span>HEP<span>Shelf</span></span></a><p>A quieter home for a connected body of research.</p></div><div class="footer-links"><a href="#features">Features</a><a href="#get-started">Get started</a><a href="https://github.com/Raminkord92/HEPShelf">GitHub ↗</a></div></div><div class="wrap footer-bottom"><span>© 2026 HEPShelf contributors</span><span>Made for curious minds in high-energy physics.</span></div></footer>
+</body>
+</html>

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=HEPShelf
+Comment=Local HEP paper library and PDF reader
+Exec=hepshelf
+Icon=hepshelf
+Terminal=false
+Categories=Education;Science;
+Keywords=arXiv;HEP;physics;papers;PDF;INSPIRE;
