@@ -1,0 +1,47 @@
+name: Windows build
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.3'
+          host: windows
+          target: desktop
+          arch: win64_msvc2022_64
+          modules: qtpdf
+          cache: true
+      - name: Configure
+        shell: pwsh
+        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
+      - name: Build
+        run: cmake --build build --config Release --parallel 2
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure
+      - name: Bundle Qt libraries
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist/HEPShelf | Out-Null
+          Copy-Item build/Release/hepshelf.exe dist/HEPShelf/
+          windeployqt --release --no-compiler-runtime dist/HEPShelf/hepshelf.exe
+          if (!(Test-Path dist/HEPShelf/platforms/qwindows.dll)) { throw "Qt Windows platform plugin is missing" }
+          if (!(Test-Path dist/HEPShelf/sqldrivers/qsqlite.dll)) { throw "Qt SQLite plugin is missing" }
+          if (!(Test-Path dist/HEPShelf/Qt6Pdf.dll)) { throw "Qt PDF library is missing" }
+          Compress-Archive -Path dist/HEPShelf -DestinationPath dist/HEPShelf-windows-x64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HEPShelf-windows-x64
+          path: dist/HEPShelf-windows-x64.zip
+          if-no-files-found: error

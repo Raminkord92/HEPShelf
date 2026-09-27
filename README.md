@@ -14,6 +14,10 @@ Launch **HEPShelf** from the application menu or run `hepshelf`. Package depende
 
 The release workflow builds, tests, and packages the application. It attaches the installer to version tags and keeps packages from manual runs as GitHub Actions artifacts.
 
+## Try the Windows build
+
+The **Windows build** GitHub Actions workflow creates a 64-bit ZIP artifact for testing. Download it from the latest successful workflow run, extract both ZIP layers, and launch `HEPShelf/hepshelf.exe`. Keep the bundled DLLs and plugin folders beside the executable. If Windows reports a missing Microsoft C++ runtime, install the current [Microsoft Visual C++ Redistributable (x64)](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist) and try again. This Windows build has not yet been tested on a user's PC.
+
 HEPShelf includes **local paper notes** and **named literature trails**. A trail is an ordered reading/research path that may contain papers already on your laptop as well as remote arXiv or INSPIRE records discovered in the citation graph.
 
 ## Research notes
