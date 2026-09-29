@@ -283,7 +283,8 @@ bool ArxivWatchManager::addRule(ArxivWatchRule rule, QString *error)
         }
     }
     rule.id = QUuid::createUuid().toString(QUuid::WithoutBraces);
-    rule.lastCheckedUtc = QDateTime::currentDateTimeUtc().addDays(-1);
+    // An unchecked rule uses a one-day lookback in fetchPage().
+    rule.lastCheckedUtc = {};
     rules_ << rule;
     save();
     emit changed();
@@ -326,7 +327,7 @@ bool ArxivWatchManager::updateRule(const ArxivWatchRule &rule, QString *error)
             }
         }
         if (updated.kind != existing.kind || updated.term.compare(existing.term, Qt::CaseInsensitive) != 0) {
-            updated.lastCheckedUtc = QDateTime::currentDateTimeUtc().addDays(-1);
+            updated.lastCheckedUtc = {};
             updated.lastError.clear();
             updated.inspireRecid = 0;
             updated.paperTitle.clear();
@@ -439,6 +440,7 @@ void ArxivWatchManager::nextRule()
         activeRule_ = *it;
         activeEndUtc_ = QDateTime::currentDateTimeUtc();
         pageStart_ = 0;
+        pageRetryCount_ = 0;
         if (activeRule_.kind == QStringLiteral("citation"))
             fetchCitations();
         else
@@ -589,41 +591,60 @@ void ArxivWatchManager::fetchPage()
     request.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("HEPShelf/0.9.0 local-literature-library"));
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                          QNetworkRequest::NoLessSafeRedirectPolicy);
-    request.setTransferTimeout(30000);
+    request.setTransferTimeout(60000);
     lastApiQueryMs_ = QDateTime::currentMSecsSinceEpoch();
     QNetworkReply *reply = network_.get(request);
     searchReply_ = reply;
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         searchReply_ = nullptr;
-        const QString failure = reply->errorString();
+        const QString networkError = reply->errorString();
+        const QNetworkReply::NetworkError error = reply->error();
+        const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        const QByteArray retryAfter = reply->rawHeader("Retry-After");
         const bool ok = reply->error() == QNetworkReply::NoError;
-        const QByteArray body = ok ? reply->readAll() : QByteArray();
+        const QByteArray body = reply->readAll();
         reply->deleteLater();
         if (!ok) {
-            ++failedRuleCount_;
-            for (ArxivWatchRule &rule : rules_) {
-                if (rule.id == activeRule_.id && rule.kind == activeRule_.kind
-                    && rule.term.compare(activeRule_.term, Qt::CaseInsensitive) == 0)
-                    rule.lastError = failure;
+            const bool transient = status == 429 || status == 502 || status == 503 || status == 504
+                                   || error == QNetworkReply::TimeoutError
+                                   || error == QNetworkReply::TemporaryNetworkFailureError;
+            if (transient && pageRetryCount_ < 2) {
+                int delaySeconds = status == 429 ? 30 * (1 << pageRetryCount_)
+                                                 : 10 * (1 << pageRetryCount_);
+                bool validRetryAfter = false;
+                const int serverDelay = retryAfter.toInt(&validRetryAfter);
+                if (validRetryAfter)
+                    delaySeconds = std::max(delaySeconds, serverDelay);
+                delaySeconds = std::clamp(delaySeconds, 3, 300);
+                ++pageRetryCount_;
+                emit statusChanged(QStringLiteral("arXiv watch %1: %2; retrying in %3 seconds (%4/2)…")
+                                       .arg(activeRule_.term,
+                                            status == 429 ? QStringLiteral("rate limited (HTTP 429)")
+                                                          : status > 0 ? QStringLiteral("server error (HTTP %1)").arg(status)
+                                                                       : QStringLiteral("request timed out"))
+                                       .arg(delaySeconds).arg(pageRetryCount_));
+                const QString ruleId = activeRule_.id;
+                const int start = pageStart_;
+                QTimer::singleShot(delaySeconds * 1000, this, [this, ruleId, start]() {
+                    if (checking_ && activeRule_.id == ruleId && pageStart_ == start)
+                        fetchPage();
+                });
+                return;
             }
-            save();
-            emit changed();
-            emit statusChanged(QStringLiteral("arXiv watch %1 failed: %2").arg(activeRule_.term, failure));
-            nextRule();
+            const QString detail = QString::fromUtf8(body.left(200)).simplified();
+            const QString failure = status == 429
+                                        ? QStringLiteral("arXiv is rate limiting requests (HTTP 429). Try again later; this watch will remain due.")
+                                        : status > 0
+                                              ? QStringLiteral("arXiv returned HTTP %1%2").arg(status)
+                                                    .arg(detail.isEmpty() ? QString() : QStringLiteral(": %1").arg(detail))
+                                              : QStringLiteral("arXiv request failed: %1").arg(networkError);
+            failActiveRule(failure);
             return;
         }
+        pageRetryCount_ = 0;
         const ArxivFeedResult feed = parseArxivFeed(body);
         if (!feed.error.isEmpty()) {
-            ++failedRuleCount_;
-            for (ArxivWatchRule &rule : rules_) {
-                if (rule.id == activeRule_.id && rule.kind == activeRule_.kind
-                    && rule.term.compare(activeRule_.term, Qt::CaseInsensitive) == 0)
-                    rule.lastError = feed.error;
-            }
-            save();
-            emit changed();
-            emit statusChanged(QStringLiteral("arXiv watch %1 failed: %2").arg(activeRule_.term, feed.error));
-            nextRule();
+            failActiveRule(feed.error);
             return;
         }
         processPapers(feed.papers);

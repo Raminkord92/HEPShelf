@@ -88,6 +88,7 @@ private:
     ArxivWatchRule activeRule_;
     QDateTime activeEndUtc_;
     int pageStart_ = 0;
+    int pageRetryCount_ = 0;
     int newHitCount_ = 0;
     int newCitationCount_ = 0;
     int failedRuleCount_ = 0;

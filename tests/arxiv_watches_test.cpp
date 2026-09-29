@@ -64,6 +64,7 @@ int main(int argc, char **argv)
         author.term = QStringLiteral("Jane Doe");
         require(manager.addRule(author, &error));
         require(manager.rules().size() == 1);
+        require(!manager.rules().first().lastCheckedUtc.isValid());
         ruleId = manager.rules().first().id;
         require(!manager.addRule(author, &error));
 
@@ -104,6 +105,7 @@ int main(int argc, char **argv)
         QString error;
         require(manager.updateRule(changed, &error));
         require(!manager.rules().last().citationBaselineReady);
+        require(!manager.rules().last().lastCheckedUtc.isValid());
         require(manager.rules().last().seenCitationIds.isEmpty());
         require(manager.rules().last().inspireRecid == 0);
         manager.removeRule(ruleId);
