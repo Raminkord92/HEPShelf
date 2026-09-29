@@ -437,7 +437,7 @@ void ReferenceDialog::downloadNext()
 
     QNetworkRequest request(QUrl(QStringLiteral("https://arxiv.org/pdf/%1").arg(ref.arxivId)));
     request.setHeader(QNetworkRequest::UserAgentHeader,
-                      QStringLiteral("HEPShelf/0.9.1 local-literature-library"));
+                      QStringLiteral("HEPShelf/0.9.2 local-literature-library"));
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                          QNetworkRequest::NoLessSafeRedirectPolicy);
     request.setTransferTimeout(60000);

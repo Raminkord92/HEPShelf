@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.2 — toolbar polish
+
+- Group the main library actions into a compact toolbar and move metadata refresh options into an Update data menu.
+- Give the toolbar and table headers a lighter gradient, clearer hover states, and a flexible search field.
+
 ## 0.9.1 — Research Watch update
 
 - Check new arXiv papers through arXiv's OAI metadata service, including author and category watches. This replaces the legacy search API request that could remain blocked by HTTP 429 rate limits.

@@ -217,8 +217,8 @@ MainWindow::MainWindow(QWidget *parent)
         if (issueCount > 0)
             counts << QStringLiteral("%1 issue(s)").arg(issueCount);
         watchesAction_->setText(counts.isEmpty()
-                                    ? QStringLiteral("Research watches…")
-                                    : QStringLiteral("Research watches… (%1)").arg(counts.join(QStringLiteral(", "))));
+                                    ? QStringLiteral("Watches…")
+                                    : QStringLiteral("Watches… · %1").arg(counts.join(QStringLiteral(", "))));
     };
     connect(watches_, &ArxivWatchManager::changed, this, updateWatchAction);
     updateWatchAction();
@@ -279,7 +279,8 @@ void MainWindow::buildMenusAndToolbar()
 {
     discoverAction_ = new QAction(QStringLiteral("Discover arXiv…"), this);
     discoverAction_->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+A")));
-    watchesAction_ = new QAction(QStringLiteral("Research watches…"), this);
+    watchesAction_ = new QAction(QStringLiteral("Watches…"), this);
+    watchesAction_->setToolTip(QStringLiteral("Watch new papers and citations"));
 
     addFolderAction_ = new QAction(style()->standardIcon(QStyle::SP_DirOpenIcon),
                                    QStringLiteral("Add paper folder…"), this);
@@ -370,7 +371,7 @@ void MainWindow::buildMenusAndToolbar()
     helpMenu->addAction(QStringLiteral("About HEPShelf"), this, [this]() {
         QMessageBox::about(
             this, QStringLiteral("About HEPShelf"),
-            QStringLiteral("<b>HEPShelf 0.9.1</b><br><br>"
+            QStringLiteral("<b>HEPShelf 0.9.2</b><br><br>"
                            "A local, citation-oriented paper library designed for HEP workflows.<br><br>"
                            "This version adds persistent research notes and named literature trails that can be built from the library or citation graph, reordered, annotated, and exported."));
     });
@@ -378,23 +379,43 @@ void MainWindow::buildMenusAndToolbar()
     auto *toolbar = addToolBar(QStringLiteral("Library"));
     toolbar->setObjectName(QStringLiteral("mainToolbar"));
     toolbar->setMovable(false);
-    toolbar->addAction(discoverAction_);
-    toolbar->addAction(watchesAction_);
+    toolbar->setFloatable(false);
+    toolbar->setIconSize(QSize(17, 17));
+    auto addToolbarButton = [toolbar](QAction *action, const QString &name) {
+        auto *button = new QToolButton(toolbar);
+        button->setObjectName(name);
+        button->setDefaultAction(action);
+        button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+        button->setCursor(Qt::PointingHandCursor);
+        toolbar->addWidget(button);
+        return button;
+    };
+    addToolbarButton(discoverAction_, QStringLiteral("toolbarDiscover"));
+    addToolbarButton(watchesAction_, QStringLiteral("toolbarWatches"));
     toolbar->addSeparator();
-    toolbar->addAction(addFolderAction_);
-    toolbar->addAction(scanAction_);
-    toolbar->addAction(metadataAction_);
-    toolbar->addAction(refreshInspireAction_);
+    addFolderAction_->setText(QStringLiteral("Add folder…"));
+    scanAction_->setText(QStringLiteral("Rescan"));
+    addToolbarButton(addFolderAction_, QStringLiteral("toolbarAddFolder"));
+    addToolbarButton(scanAction_, QStringLiteral("toolbarRescan"));
+    auto *updateButton = new QToolButton(toolbar);
+    updateButton->setObjectName(QStringLiteral("toolbarUpdate"));
+    updateButton->setText(QStringLiteral("Update data"));
+    updateButton->setToolTip(QStringLiteral("Refresh paper metadata or INSPIRE data"));
+    updateButton->setPopupMode(QToolButton::InstantPopup);
+    updateButton->setCursor(Qt::PointingHandCursor);
+    auto *updateMenu = new QMenu(updateButton);
+    updateMenu->addAction(metadataAction_);
+    updateMenu->addAction(refreshInspireAction_);
+    updateButton->setMenu(updateMenu);
+    toolbar->addWidget(updateButton);
     toolbar->addSeparator();
 
-    auto *searchLabel = new QLabel(QStringLiteral("Search"), toolbar);
-    toolbar->addWidget(searchLabel);
     search_ = new QLineEdit(toolbar);
     search_->setObjectName(QStringLiteral("librarySearch"));
-    search_->setPlaceholderText(QStringLiteral("Title, author, arXiv ID, note, tag, collection, trail, DOI, or path…"));
+    search_->setPlaceholderText(QStringLiteral("Search papers, authors, notes…"));
     search_->setClearButtonEnabled(true);
-    search_->setMinimumWidth(340);
-    search_->setMaximumWidth(680);
+    search_->setMinimumWidth(220);
+    search_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     toolbar->addWidget(search_);
 
     auto *focusSearch = new QAction(this);
@@ -939,10 +960,56 @@ void MainWindow::applyProfessionalStyle()
 {
     setStyleSheet(QStringLiteral(R"QSS(
         QToolBar {
-            spacing: 7px;
-            padding: 7px 9px;
+            spacing: 5px;
+            padding: 8px 10px;
             border: 0;
-            border-bottom: 1px solid palette(mid);
+            border-bottom: 1px solid #b7cce2;
+            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                        stop:0 #ffffff, stop:0.52 #f1f7fd, stop:1 #e2eef9);
+        }
+        QToolBar::separator {
+            width: 1px;
+            margin: 5px 8px;
+            background: #c9d9e9;
+        }
+        QToolBar#mainToolbar QToolButton {
+            min-height: 27px;
+            padding: 4px 10px;
+            border: 1px solid #b9d0e7;
+            border-radius: 6px;
+            color: #203c58;
+            font-weight: 600;
+            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                        stop:0 #ffffff, stop:1 #e7f1fa);
+        }
+        QToolBar#mainToolbar QToolButton:hover {
+            border-color: #75aee2;
+            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                        stop:0 #ffffff, stop:1 #d7eaff);
+        }
+        QToolBar#mainToolbar QToolButton:pressed {
+            background: #c6def6;
+        }
+        QToolBar#mainToolbar QToolButton#toolbarDiscover {
+            color: white;
+            border-color: #246bb1;
+            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                        stop:0 #61aaf0, stop:0.45 #3189da, stop:1 #2070bf);
+        }
+        QToolBar#mainToolbar QToolButton#toolbarDiscover:hover {
+            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                        stop:0 #80bdff, stop:1 #2b7ed0);
+        }
+        QToolBar#mainToolbar QLineEdit#librarySearch {
+            min-height: 27px;
+            margin-left: 5px;
+            padding: 4px 10px;
+            border: 1px solid #a9c5df;
+            border-radius: 7px;
+            background: white;
+        }
+        QToolBar#mainToolbar QLineEdit#librarySearch:focus {
+            border: 2px solid #4b99dc;
         }
         QLineEdit, QSpinBox {
             padding: 6px 8px;
@@ -957,6 +1024,9 @@ void MainWindow::applyProfessionalStyle()
             background: palette(button);
         }
         QPushButton:hover, QToolButton:hover {
+            background: palette(midlight);
+        }
+        QPushButton:pressed, QToolButton:pressed {
             background: palette(midlight);
         }
         QPushButton:disabled, QToolButton:disabled {
@@ -977,6 +1047,9 @@ void MainWindow::applyProfessionalStyle()
             background: palette(highlight);
             color: palette(highlighted-text);
         }
+        QTreeWidget#navigation::item:hover:!selected {
+            background: #e8f2fc;
+        }
         QTableWidget#libraryTable {
             border: 0;
             selection-background-color: palette(highlight);
@@ -986,7 +1059,8 @@ void MainWindow::applyProfessionalStyle()
             padding: 8px;
             border: 0;
             border-bottom: 1px solid palette(mid);
-            background: palette(button);
+            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                        stop:0 #ffffff, stop:1 #eaf2fa);
             font-weight: 600;
         }
         QScrollArea#detailsScroll {

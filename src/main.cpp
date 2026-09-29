@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationName(QStringLiteral("HEPShelf"));
     QCoreApplication::setOrganizationDomain(QStringLiteral("hepshelf.local"));
     QCoreApplication::setApplicationName(QStringLiteral("HEPShelf"));
-    QCoreApplication::setApplicationVersion(QStringLiteral("0.9.1"));
+    QCoreApplication::setApplicationVersion(QStringLiteral("0.9.2"));
     QApplication::setApplicationDisplayName(QStringLiteral("HEPShelf"));
 
     MainWindow window;
