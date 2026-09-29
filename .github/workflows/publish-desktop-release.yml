@@ -6,15 +6,15 @@ on:
       tag:
         description: Existing release tag
         required: true
-        default: v0.9.0
+        default: v0.9.3
       windows_run_id:
         description: Successful Windows build run ID
         required: true
-        default: '36299344149'
+        default: '36523690920'
       macos_run_id:
         description: Successful macOS build run ID
         required: true
-        default: '36299563666'
+        default: '36523690915'
 
 permissions:
   actions: read
@@ -36,8 +36,12 @@ jobs:
           [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
           [[ "$WINDOWS_RUN_ID" =~ ^[0-9]+$ ]]
           [[ "$MACOS_RUN_ID" =~ ^[0-9]+$ ]]
+          test -f ".github/release-notes-${RELEASE_TAG}.md"
           test "$(gh run view "$WINDOWS_RUN_ID" --repo "$GITHUB_REPOSITORY" --json conclusion --jq .conclusion)" = success
           test "$(gh run view "$MACOS_RUN_ID" --repo "$GITHUB_REPOSITORY" --json conclusion --jq .conclusion)" = success
+          RELEASE_SHA="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" --jq .object.sha)"
+          test "$(gh run view "$WINDOWS_RUN_ID" --repo "$GITHUB_REPOSITORY" --json headSha --jq .headSha)" = "$RELEASE_SHA"
+          test "$(gh run view "$MACOS_RUN_ID" --repo "$GITHUB_REPOSITORY" --json headSha --jq .headSha)" = "$RELEASE_SHA"
           mkdir -p dist/windows dist/macos
           gh run download "$WINDOWS_RUN_ID" --repo "$GITHUB_REPOSITORY" --name HEPShelf-windows-x64 --dir dist/windows
           gh run download "$MACOS_RUN_ID" --repo "$GITHUB_REPOSITORY" --name HEPShelf-macOS-universal --dir dist/macos
@@ -56,5 +60,5 @@ jobs:
         run: |
           set -euo pipefail
           gh release upload "$RELEASE_TAG" dist/windows/HEPShelf-windows-x64.zip dist/macos/HEPShelf-macOS-universal.dmg --repo "$GITHUB_REPOSITORY"
-          gh release edit "$RELEASE_TAG" --notes-file .github/release-notes-v0.9.0.md --repo "$GITHUB_REPOSITORY"
+          gh release edit "$RELEASE_TAG" --notes-file ".github/release-notes-${RELEASE_TAG}.md" --repo "$GITHUB_REPOSITORY"
           gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' --repo "$GITHUB_REPOSITORY"
