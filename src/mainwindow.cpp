@@ -17,6 +17,7 @@
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QDir>
+#include <QEvent>
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -24,6 +25,7 @@
 #include <QFont>
 #include <QFormLayout>
 #include <QFuture>
+#include <QGridLayout>
 #include <QHeaderView>
 #include <QHBoxLayout>
 #include <QIcon>
@@ -47,8 +49,10 @@
 #include <QProgressBar>
 #include <QPlainTextEdit>
 #include <QPushButton>
+#include <QResizeEvent>
 #include <QRegularExpression>
 #include <QScrollArea>
+#include <QScrollBar>
 #include <QSet>
 #include <QSignalBlocker>
 #include <QSettings>
@@ -227,6 +231,8 @@ MainWindow::MainWindow(QWidget *parent)
     updateCounts();
     rebuildNavigation();
     restoreUiState();
+    if (!detailsUserToggled_ && detailsAction_)
+        detailsAction_->setChecked(width() >= 1150);
 
     QTimer::singleShot(0, this, [this]() { fetchMissingMetadata(); });
 }
@@ -371,7 +377,7 @@ void MainWindow::buildMenusAndToolbar()
     helpMenu->addAction(QStringLiteral("About HEPShelf"), this, [this]() {
         QMessageBox::about(
             this, QStringLiteral("About HEPShelf"),
-            QStringLiteral("<b>HEPShelf 0.9.2</b><br><br>"
+            QStringLiteral("<b>HEPShelf 0.9.3</b><br><br>"
                            "A local, citation-oriented paper library designed for HEP workflows.<br><br>"
                            "This version adds persistent research notes and named literature trails that can be built from the library or citation graph, reordered, annotated, and exported."));
     });
@@ -408,6 +414,18 @@ void MainWindow::buildMenusAndToolbar()
     updateMenu->addAction(refreshInspireAction_);
     updateButton->setMenu(updateMenu);
     toolbar->addWidget(updateButton);
+    detailsAction_ = new QAction(QStringLiteral("Details"), this);
+    detailsAction_->setCheckable(true);
+    detailsAction_->setChecked(true);
+    detailsAction_->setToolTip(QStringLiteral("Show or hide the paper details panel"));
+    addToolbarButton(detailsAction_, QStringLiteral("toolbarDetails"));
+    connect(detailsAction_, &QAction::toggled, this, [this](bool visible) {
+        if (detailsPanel_)
+            detailsPanel_->setVisible(visible);
+        if (!visible && table_)
+            table_->horizontalScrollBar()->setValue(0);
+    });
+    connect(detailsAction_, &QAction::triggered, this, [this]() { detailsUserToggled_ = true; });
     toolbar->addSeparator();
 
     search_ = new QLineEdit(toolbar);
@@ -486,8 +504,9 @@ QWidget *MainWindow::buildLibraryPage()
     table_->setAlternatingRowColors(true);
     table_->setShowGrid(false);
     table_->setSortingEnabled(true);
+    table_->setFocusPolicy(Qt::StrongFocus);
     table_->verticalHeader()->setVisible(false);
-    table_->verticalHeader()->setDefaultSectionSize(34);
+    table_->verticalHeader()->setDefaultSectionSize(40);
     table_->horizontalHeader()->setHighlightSections(false);
     table_->horizontalHeader()->setStretchLastSection(false);
     table_->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
@@ -502,12 +521,49 @@ QWidget *MainWindow::buildLibraryPage()
     table_->setColumnWidth(7, 70);
     table_->setContextMenuPolicy(Qt::CustomContextMenu);
 
-    QWidget *details = buildDetailsPanel();
-    details->setMinimumWidth(320);
-    details->setMaximumWidth(520);
+    tableEmptyState_ = new QWidget(table_->viewport());
+    tableEmptyState_->setObjectName(QStringLiteral("libraryEmptyState"));
+    auto *emptyLayout = new QVBoxLayout(tableEmptyState_);
+    emptyLayout->setContentsMargins(24, 24, 24, 24);
+    emptyLayout->addStretch();
+    auto *emptyCard = new QFrame(tableEmptyState_);
+    emptyCard->setObjectName(QStringLiteral("libraryEmptyCard"));
+    emptyCard->setMaximumWidth(420);
+    auto *cardLayout = new QVBoxLayout(emptyCard);
+    cardLayout->setContentsMargins(30, 28, 30, 28);
+    cardLayout->setSpacing(12);
+    tableEmptyTitle_ = new QLabel(emptyCard);
+    tableEmptyTitle_->setObjectName(QStringLiteral("libraryEmptyTitle"));
+    tableEmptyTitle_->setAlignment(Qt::AlignCenter);
+    tableEmptyDescription_ = new QLabel(emptyCard);
+    tableEmptyDescription_->setObjectName(QStringLiteral("libraryEmptyDescription"));
+    tableEmptyDescription_->setAlignment(Qt::AlignCenter);
+    tableEmptyDescription_->setWordWrap(true);
+    tableEmptyButton_ = new QPushButton(emptyCard);
+    tableEmptyButton_->setObjectName(QStringLiteral("libraryEmptyButton"));
+    cardLayout->addWidget(tableEmptyTitle_);
+    cardLayout->addWidget(tableEmptyDescription_);
+    cardLayout->addSpacing(6);
+    cardLayout->addWidget(tableEmptyButton_, 0, Qt::AlignHCenter);
+    emptyLayout->addWidget(emptyCard, 0, Qt::AlignHCenter);
+    emptyLayout->addStretch();
+    tableEmptyState_->hide();
+    table_->viewport()->installEventFilter(this);
+    connect(tableEmptyButton_, &QPushButton::clicked, this, [this]() {
+        if (!search_->text().isEmpty())
+            search_->clear();
+        else if (currentFilter_ != LibraryFilter::All)
+            setLibraryFilter(LibraryFilter::All);
+        else
+            addFolder();
+    });
+
+    detailsPanel_ = buildDetailsPanel();
+    detailsPanel_->setMinimumWidth(320);
+    detailsPanel_->setMaximumWidth(520);
     librarySplitter_->addWidget(navigation_);
     librarySplitter_->addWidget(table_);
-    librarySplitter_->addWidget(details);
+    librarySplitter_->addWidget(detailsPanel_);
     librarySplitter_->setStretchFactor(0, 0);
     librarySplitter_->setStretchFactor(1, 1);
     librarySplitter_->setStretchFactor(2, 0);
@@ -542,9 +598,14 @@ QWidget *MainWindow::buildDetailsPanel()
     scroll->setFrameShape(QFrame::NoFrame);
 
     auto *panel = new QWidget(scroll);
+    panel->setObjectName(QStringLiteral("detailsPanel"));
     auto *layout = new QVBoxLayout(panel);
-    layout->setContentsMargins(18, 18, 18, 18);
-    layout->setSpacing(10);
+    layout->setContentsMargins(20, 20, 20, 24);
+    layout->setSpacing(12);
+
+    auto *eyebrow = new QLabel(QStringLiteral("PAPER DETAILS"), panel);
+    eyebrow->setObjectName(QStringLiteral("detailsEyebrow"));
+    layout->addWidget(eyebrow);
 
     auto *titleRow = new QHBoxLayout();
     detailsTitle_ = new QLabel(QStringLiteral("Select a paper"), panel);
@@ -583,15 +644,17 @@ QWidget *MainWindow::buildDetailsPanel()
     detailsCitationMetrics_->setTextInteractionFlags(Qt::TextSelectableByMouse);
     layout->addWidget(detailsCitationMetrics_);
 
-    auto *citationButtons = new QHBoxLayout();
-    referencesButton_ = new QPushButton(QStringLiteral("References…"), panel);
-    citedByButton_ = new QPushButton(QStringLiteral("Cited by…"), panel);
-    citationGraphButton_ = new QPushButton(QStringLiteral("Network…"), panel);
+    auto *citationButtons = new QGridLayout();
+    citationButtons->setHorizontalSpacing(8);
+    citationButtons->setVerticalSpacing(8);
+    referencesButton_ = new QPushButton(QStringLiteral("References"), panel);
+    citedByButton_ = new QPushButton(QStringLiteral("Cited by"), panel);
+    citationGraphButton_ = new QPushButton(QStringLiteral("Citation graph"), panel);
     refreshInspireButton_ = new QPushButton(QStringLiteral("Refresh INSPIRE"), panel);
-    citationButtons->addWidget(referencesButton_);
-    citationButtons->addWidget(citedByButton_);
-    citationButtons->addWidget(citationGraphButton_);
-    citationButtons->addWidget(refreshInspireButton_);
+    citationButtons->addWidget(referencesButton_, 0, 0);
+    citationButtons->addWidget(citedByButton_, 0, 1);
+    citationButtons->addWidget(citationGraphButton_, 1, 0);
+    citationButtons->addWidget(refreshInspireButton_, 1, 1);
     layout->addLayout(citationButtons);
 
     auto *abstractHeading = new QLabel(QStringLiteral("Abstract"), panel);
@@ -700,6 +763,7 @@ QWidget *MainWindow::buildDetailsPanel()
 
     auto *primaryButtons = new QHBoxLayout();
     readerButton_ = new QPushButton(QStringLiteral("Read"), panel);
+    readerButton_->setObjectName(QStringLiteral("detailPrimaryButton"));
     readerButton_->setDefault(true);
     externalButton_ = new QPushButton(QStringLiteral("Open externally"), panel);
     primaryButtons->addWidget(readerButton_);
@@ -990,6 +1054,11 @@ void MainWindow::applyProfessionalStyle()
         QToolBar#mainToolbar QToolButton:pressed {
             background: #c6def6;
         }
+        QToolBar#mainToolbar QToolButton#toolbarDetails:checked {
+            color: #1c64a3;
+            border-color: #8fbbe3;
+            background: #dceefe;
+        }
         QToolBar#mainToolbar QToolButton#toolbarDiscover {
             color: white;
             border-color: #246bb1;
@@ -1013,80 +1082,168 @@ void MainWindow::applyProfessionalStyle()
         }
         QLineEdit, QSpinBox {
             padding: 6px 8px;
-            border: 1px solid palette(mid);
-            border-radius: 5px;
-            background: palette(base);
+            border: 1px solid #c6d3e1;
+            border-radius: 7px;
+            background: #ffffff;
         }
         QPushButton, QToolButton {
-            padding: 6px 10px;
-            border: 1px solid palette(mid);
-            border-radius: 5px;
-            background: palette(button);
+            padding: 7px 11px;
+            border: 1px solid #c4d3e3;
+            border-radius: 7px;
+            color: #29435d;
+            background: #ffffff;
         }
         QPushButton:hover, QToolButton:hover {
-            background: palette(midlight);
+            border-color: #8ab5e0;
+            background: #eff7ff;
         }
         QPushButton:pressed, QToolButton:pressed {
-            background: palette(midlight);
+            background: #dcecfb;
         }
         QPushButton:disabled, QToolButton:disabled {
-            color: palette(mid);
+            color: #9caebe;
+            border-color: #dae2ea;
+            background: #f5f7f9;
+        }
+        QTabWidget::pane {
+            border: 0;
+            border-top: 1px solid #d6e1ec;
+            background: #ffffff;
+        }
+        QTabBar::tab {
+            min-width: 64px;
+            padding: 9px 16px;
+            border: 0;
+            border-bottom: 2px solid transparent;
+            color: #718398;
+            background: #f5f8fb;
+        }
+        QTabBar::tab:selected {
+            color: #1e5f9d;
+            border-bottom: 2px solid #3189da;
+            background: #ffffff;
+            font-weight: 700;
+        }
+        QTabBar::tab:hover:!selected {
+            color: #315c84;
+            background: #ebf4fc;
         }
         QTreeWidget#navigation {
             border: 0;
-            border-right: 1px solid palette(mid);
-            padding: 8px 6px;
-            background: palette(window);
+            border-right: 1px solid #d4e2ee;
+            padding: 12px 7px;
+            background: #f1f6fb;
         }
         QTreeWidget#navigation::item {
-            padding: 9px 10px;
-            margin: 2px 3px;
-            border-radius: 5px;
+            padding: 8px 9px;
+            margin: 2px 4px;
+            border-radius: 7px;
+            color: #314c66;
         }
         QTreeWidget#navigation::item:selected {
-            background: palette(highlight);
-            color: palette(highlighted-text);
+            background: #d7eafb;
+            color: #155b9d;
+            font-weight: 700;
         }
         QTreeWidget#navigation::item:hover:!selected {
-            background: #e8f2fc;
+            background: #e3eef8;
+        }
+        QTreeWidget#navigation::branch:selected {
+            background: #f1f6fb;
         }
         QTableWidget#libraryTable {
             border: 0;
-            selection-background-color: palette(highlight);
-            selection-color: palette(highlighted-text);
+            background: #ffffff;
+            alternate-background-color: #f8fbfe;
+            selection-background-color: #dceefe;
+            selection-color: #173b5c;
+            color: #263f58;
+        }
+        QTableWidget#libraryTable::item {
+            padding: 4px 8px;
+            border-bottom: 1px solid #eef2f6;
+        }
+        QTableWidget#libraryTable::item:hover:!selected {
+            background: #eff7ff;
+        }
+        QWidget#libraryEmptyState {
+            background: #ffffff;
+        }
+        QFrame#libraryEmptyCard {
+            border: 1px solid #dce8f3;
+            border-radius: 12px;
+            background: #f8fbff;
+        }
+        QLabel#libraryEmptyTitle {
+            color: #24435f;
+            font-size: 19px;
+            font-weight: 700;
+        }
+        QLabel#libraryEmptyDescription {
+            color: #698099;
+            font-size: 13px;
+        }
+        QPushButton#libraryEmptyButton {
+            color: white;
+            border-color: #2475be;
+            background: #287fcf;
+            font-weight: 700;
+            padding: 9px 15px;
+        }
+        QPushButton#libraryEmptyButton:hover {
+            background: #3b92dc;
         }
         QHeaderView::section {
-            padding: 8px;
+            padding: 10px;
             border: 0;
-            border-bottom: 1px solid palette(mid);
-            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                        stop:0 #ffffff, stop:1 #eaf2fa);
+            border-bottom: 1px solid #d8e3ed;
+            background: #f1f6fb;
+            color: #3a5570;
             font-weight: 600;
         }
         QScrollArea#detailsScroll {
-            border-left: 1px solid palette(mid);
-            background: palette(base);
+            border-left: 1px solid #d4e2ee;
+            background: #fbfdff;
+        }
+        QWidget#detailsPanel {
+            background: #fbfdff;
+        }
+        QLabel#detailsEyebrow {
+            color: #6585a3;
+            font-size: 10px;
+            font-weight: 700;
         }
         QLabel#detailsTitle {
-            font-size: 18px;
+            color: #1e3852;
+            font-size: 19px;
             font-weight: 700;
         }
         QLabel#detailsAuthors {
-            color: palette(text);
+            color: #415d76;
             font-size: 13px;
         }
         QLabel#detailsMeta {
-            color: palette(mid);
+            color: #7289a0;
         }
         QLabel#sectionHeading {
+            color: #315676;
             font-weight: 700;
-            margin-top: 5px;
+            margin-top: 9px;
         }
-        QTextBrowser#abstractView {
-            border: 1px solid palette(mid);
-            border-radius: 5px;
-            padding: 5px;
-            background: palette(base);
+        QTextBrowser#abstractView, QPlainTextEdit, QListWidget {
+            border: 1px solid #d5e2ee;
+            border-radius: 8px;
+            padding: 8px;
+            background: #ffffff;
+        }
+        QPushButton#detailPrimaryButton {
+            color: white;
+            border-color: #246bb1;
+            background: #287cc9;
+            font-weight: 700;
+        }
+        QPushButton#detailPrimaryButton:hover {
+            background: #368fda;
         }
         QWidget#readerControls {
             border-bottom: 1px solid palette(mid);
@@ -1103,7 +1260,9 @@ void MainWindow::applyProfessionalStyle()
             color: palette(mid);
         }
         QStatusBar {
-            border-top: 1px solid palette(mid);
+            border-top: 1px solid #d8e3ed;
+            background: #f5f8fb;
+            color: #526d85;
         }
     )QSS"));
 }
@@ -1114,6 +1273,10 @@ void MainWindow::restoreUiState()
     const QByteArray geometry = settings.value(QStringLiteral("ui/geometry")).toByteArray();
     if (!geometry.isEmpty())
         restoreGeometry(geometry);
+    if (settings.contains(QStringLiteral("ui/detailsVisible"))) {
+        detailsUserToggled_ = true;
+        detailsAction_->setChecked(settings.value(QStringLiteral("ui/detailsVisible")).toBool());
+    }
     const QByteArray splitter = settings.value(QStringLiteral("ui/librarySplitter")).toByteArray();
     if (!splitter.isEmpty())
         librarySplitter_->restoreState(splitter);
@@ -1152,10 +1315,29 @@ void MainWindow::saveUiState()
 {
     QSettings settings;
     settings.setValue(QStringLiteral("ui/geometry"), saveGeometry());
-    settings.setValue(QStringLiteral("ui/librarySplitter"), librarySplitter_->saveState());
+    if (detailsPanel_->isVisible())
+        settings.setValue(QStringLiteral("ui/librarySplitter"), librarySplitter_->saveState());
     settings.setValue(QStringLiteral("ui/tableHeader"), table_->horizontalHeader()->saveState());
     settings.setValue(QStringLiteral("ui/filter"), static_cast<int>(currentFilter_));
     settings.setValue(QStringLiteral("ui/facetValue"), currentFacetValue_);
+    if (detailsUserToggled_)
+        settings.setValue(QStringLiteral("ui/detailsVisible"), detailsAction_->isChecked());
+    else
+        settings.remove(QStringLiteral("ui/detailsVisible"));
+}
+
+bool MainWindow::eventFilter(QObject *watched, QEvent *event)
+{
+    if (table_ && watched == table_->viewport() && event->type() == QEvent::Resize && tableEmptyState_)
+        tableEmptyState_->setGeometry(table_->viewport()->rect());
+    return QMainWindow::eventFilter(watched, event);
+}
+
+void MainWindow::resizeEvent(QResizeEvent *event)
+{
+    QMainWindow::resizeEvent(event);
+    if (detailsAction_ && detailsPanel_ && !detailsUserToggled_)
+        detailsAction_->setChecked(event->size().width() >= 1150);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
@@ -1518,6 +1700,26 @@ void MainWindow::refreshTable()
     }
     if (!restored && table_->rowCount() > 0)
         table_->selectRow(0);
+    }
+    if (rows.isEmpty()) {
+        if (search_ && !search_->text().isEmpty()) {
+            tableEmptyTitle_->setText(QStringLiteral("No matching papers"));
+            tableEmptyDescription_->setText(QStringLiteral("Try a different title, author, arXiv ID, or note."));
+            tableEmptyButton_->setText(QStringLiteral("Clear search"));
+        } else if (currentFilter_ != LibraryFilter::All) {
+            tableEmptyTitle_->setText(QStringLiteral("Nothing in this view yet"));
+            tableEmptyDescription_->setText(QStringLiteral("Choose another library view to browse your papers."));
+            tableEmptyButton_->setText(QStringLiteral("Show all papers"));
+        } else {
+            tableEmptyTitle_->setText(QStringLiteral("Start your paper library"));
+            tableEmptyDescription_->setText(QStringLiteral("Add a folder of PDFs to index and explore your papers here."));
+            tableEmptyButton_->setText(QStringLiteral("Add paper folder…"));
+        }
+        tableEmptyState_->setGeometry(table_->viewport()->rect());
+        tableEmptyState_->show();
+        tableEmptyState_->raise();
+    } else {
+        tableEmptyState_->hide();
     }
     showSelectedDetails();
 }

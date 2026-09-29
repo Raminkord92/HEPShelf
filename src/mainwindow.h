@@ -12,6 +12,7 @@
 
 class QAction;
 class QCloseEvent;
+class QEvent;
 class QLabel;
 class QLineEdit;
 class QGroupBox;
@@ -24,6 +25,7 @@ class QPlainTextEdit;
 class QProgressBar;
 class QPoint;
 class QPushButton;
+class QResizeEvent;
 class QSpinBox;
 class QSplitter;
 class QTabWidget;
@@ -43,6 +45,8 @@ public:
 
 protected:
     void closeEvent(QCloseEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
     void buildUi();
@@ -169,6 +173,7 @@ private:
 
     QAction *discoverAction_ = nullptr;
     QAction *watchesAction_ = nullptr;
+    QAction *detailsAction_ = nullptr;
     QAction *addFolderAction_ = nullptr;
     QAction *manageFoldersAction_ = nullptr;
     QAction *scanAction_ = nullptr;
@@ -192,8 +197,14 @@ private:
     QLineEdit *search_ = nullptr;
     QTreeWidget *navigation_ = nullptr;
     QTableWidget *table_ = nullptr;
+    QWidget *tableEmptyState_ = nullptr;
+    QLabel *tableEmptyTitle_ = nullptr;
+    QLabel *tableEmptyDescription_ = nullptr;
+    QPushButton *tableEmptyButton_ = nullptr;
     QTabWidget *tabs_ = nullptr;
     QSplitter *librarySplitter_ = nullptr;
+    QWidget *detailsPanel_ = nullptr;
+    bool detailsUserToggled_ = false;
 
     QLabel *detailsTitle_ = nullptr;
     QLabel *detailsAuthors_ = nullptr;

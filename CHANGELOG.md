@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.3 — library layout refinement
+
+- Give the navigation, paper table, tabs, and details panel a consistent visual style and clearer spacing.
+- Arrange citation actions in two rows so they fit the details panel.
+- Add a helpful empty library view and a Details toggle. At compact window sizes, the details panel starts hidden to leave room for paper titles.
+
 ## 0.9.2 — toolbar polish
 
 - Group the main library actions into a compact toolbar and move metadata refresh options into an Update data menu.

@@ -125,7 +125,7 @@ void ArxivClient::requestNextBatch()
 
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::UserAgentHeader,
-                      QStringLiteral("HEPShelf/0.9.2 local-literature-library"));
+                      QStringLiteral("HEPShelf/0.9.3 local-literature-library"));
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                          QNetworkRequest::NoLessSafeRedirectPolicy);
     request.setTransferTimeout(20000);
@@ -181,7 +181,7 @@ void ArxivClient::requestNextInspireFallback()
 
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::UserAgentHeader,
-                      QStringLiteral("HEPShelf/0.9.2 local-literature-library"));
+                      QStringLiteral("HEPShelf/0.9.3 local-literature-library"));
     request.setRawHeader("Accept", "application/json");
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                          QNetworkRequest::NoLessSafeRedirectPolicy);

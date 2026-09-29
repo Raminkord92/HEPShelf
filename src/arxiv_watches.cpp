@@ -601,7 +601,7 @@ void ArxivWatchManager::fetchPage()
     }
     url.setQuery(query);
     QNetworkRequest request(url);
-    request.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("HEPShelf/0.9.2 local-literature-library"));
+    request.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("HEPShelf/0.9.3 local-literature-library"));
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                          QNetworkRequest::NoLessSafeRedirectPolicy);
     request.setTransferTimeout(60000);
@@ -806,7 +806,7 @@ void ArxivWatchManager::nextDownload()
     downloading_ = true;
     downloadPrefix_.clear();
     QNetworkRequest request(QUrl(QStringLiteral("https://arxiv.org/pdf/%1.pdf").arg(paper.arxivId)));
-    request.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("HEPShelf/0.9.2 local-literature-library"));
+    request.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("HEPShelf/0.9.3 local-literature-library"));
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                          QNetworkRequest::NoLessSafeRedirectPolicy);
     request.setTransferTimeout(90000);
