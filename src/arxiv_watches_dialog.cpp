@@ -35,7 +35,7 @@ ArxivWatchesDialog::ArxivWatchesDialog(ArxivWatchManager *manager, Database *dat
     setMinimumSize(800, 530);
     auto *outer = new QVBoxLayout(this);
     auto *intro = new QLabel(QStringLiteral("Watch author names or arXiv categories. Checks run daily while HEPShelf is open and catch up on the next launch. "
-                                            "A new watch checks the past 24 hours. Automatic PDF downloads are optional for each watch."), this);
+                                            "A new watch checks submissions from the previous UTC date onward. Automatic PDF downloads are optional for each watch."), this);
     intro->setWordWrap(true);
     outer->addWidget(intro);
 
@@ -253,7 +253,7 @@ void ArxivWatchesDialog::editRule(const QString &id, const QString &initialKind)
     form->addRow(QString(), automatic);
     form->addRow(QStringLiteral("Download folder:"), folderWidget);
     outer->addLayout(form);
-    auto *hint = new QLabel(QStringLiteral("Author watches use arXiv's author-name search; namesakes can match. Category watches use codes such as hep-ph. Citation watches use INSPIRE; the first check records existing citations as a baseline. Automatic PDF downloads apply when a citing paper has an arXiv ID."), &dialog);
+    auto *hint = new QLabel(QStringLiteral("Author watches match names in arXiv metadata; namesakes can match. Category watches use codes such as hep-ph. Citation watches use INSPIRE; the first check records existing citations as a baseline. Automatic PDF downloads apply when a citing paper has an arXiv ID."), &dialog);
     hint->setWordWrap(true);
     outer->addWidget(hint);
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Cancel | QDialogButtonBox::Save, &dialog);

@@ -398,7 +398,7 @@ void ArxivDiscoveryDialog::startSearch()
 
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::UserAgentHeader,
-                      QStringLiteral("HEPShelf/0.9.0 local-literature-library"));
+                      QStringLiteral("HEPShelf/0.9.1 local-literature-library"));
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                          QNetworkRequest::NoLessSafeRedirectPolicy);
     request.setTransferTimeout(30000);
@@ -697,7 +697,7 @@ void ArxivDiscoveryDialog::startDownloadForIndex(int resultIndex)
     QUrl url(QStringLiteral("https://arxiv.org/pdf/%1.pdf").arg(paper.arxivId));
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::UserAgentHeader,
-                      QStringLiteral("HEPShelf/0.9.0 local-literature-library"));
+                      QStringLiteral("HEPShelf/0.9.1 local-literature-library"));
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                          QNetworkRequest::NoLessSafeRedirectPolicy);
     request.setTransferTimeout(90000);

@@ -48,6 +48,24 @@ int main(int argc, char **argv)
     require(parsed.papers.first().authorNames == QStringList{QStringLiteral("Jane Doe")});
     require(parsed.papers.first().primaryCategory == QStringLiteral("hep-ph"));
 
+    const QByteArray oai = R"XML(<OAI-PMH xmlns="http://www.openarchives.org/OAI/2.0/">
+<ListRecords><record><header><identifier>oai:arXiv.org:2609.12345</identifier></header>
+<metadata><arXiv xmlns="http://arxiv.org/OAI/arXiv/"><id>2609.12345</id>
+<created>2026-09-28</created><authors><author><keyname>Valeshabadi</keyname>
+<forenames>Kord</forenames></author></authors><title>New paper</title>
+<categories>hep-ph hep-th</categories><abstract>Abstract text</abstract></arXiv></metadata>
+</record><resumptionToken>next-page</resumptionToken></ListRecords></OAI-PMH>)XML";
+    const ArxivOaiResult oaiParsed = parseArxivOai(oai);
+    require(oaiParsed.error.isEmpty());
+    require(oaiParsed.nextToken == QStringLiteral("next-page"));
+    require(oaiParsed.papers.size() == 1);
+    require(oaiParsed.papers.first().arxivId == QStringLiteral("2609.12345"));
+    require(oaiParsed.papers.first().authorNames == QStringList{QStringLiteral("Kord Valeshabadi")});
+    require(oaiParsed.papers.first().published == QStringLiteral("2026-09-28"));
+    require(oaiParsed.papers.first().categories == QStringLiteral("hep-ph hep-th"));
+    require(parseArxivOai(QByteArrayLiteral("<OAI-PMH><error code=\"noRecordsMatch\">No records</error></OAI-PMH>")).error.isEmpty());
+    require(!parseArxivOai(QByteArrayLiteral("<html>rate limited</html>")).error.isEmpty());
+
     QString ruleId;
     QString citationRuleId;
     {

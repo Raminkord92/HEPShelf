@@ -12,3 +12,11 @@ struct ArxivFeedResult {
 };
 
 ArxivFeedResult parseArxivFeed(const QByteArray &xml);
+
+struct ArxivOaiResult {
+    QList<PaperRecord> papers;
+    QString nextToken;
+    QString error;
+};
+
+ArxivOaiResult parseArxivOai(const QByteArray &xml);

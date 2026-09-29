@@ -133,7 +133,7 @@ void InspireClient::fetchPaper(const QString &arxivId, PaperCallback callback)
 
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::UserAgentHeader,
-                      QStringLiteral("HEPShelf/0.9.0 local-literature-library"));
+                      QStringLiteral("HEPShelf/0.9.1 local-literature-library"));
     request.setRawHeader("Accept", "application/json");
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                          QNetworkRequest::NoLessSafeRedirectPolicy);
@@ -173,7 +173,7 @@ void InspireClient::fetchPaperByRecid(int inspireRecid, PaperCallback callback)
     QUrl url(QStringLiteral("https://inspirehep.net/api/literature/%1").arg(inspireRecid));
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::UserAgentHeader,
-                      QStringLiteral("HEPShelf/0.9.0 local-literature-library"));
+                      QStringLiteral("HEPShelf/0.9.1 local-literature-library"));
     request.setRawHeader("Accept", "application/json");
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                          QNetworkRequest::NoLessSafeRedirectPolicy);
@@ -212,7 +212,7 @@ void InspireClient::fetchBibTeX(const QString &arxivId, TextCallback callback)
 
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::UserAgentHeader,
-                      QStringLiteral("HEPShelf/0.9.0 local-literature-library"));
+                      QStringLiteral("HEPShelf/0.9.1 local-literature-library"));
     request.setRawHeader("Accept", "application/x-bibtex");
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                          QNetworkRequest::NoLessSafeRedirectPolicy);
@@ -261,7 +261,7 @@ void InspireClient::fetchCitingPapers(int inspireRecid, int limit, CitingCallbac
 
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::UserAgentHeader,
-                      QStringLiteral("HEPShelf/0.9.0 local-literature-library"));
+                      QStringLiteral("HEPShelf/0.9.1 local-literature-library"));
     request.setRawHeader("Accept", "application/json");
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                          QNetworkRequest::NoLessSafeRedirectPolicy);
@@ -310,7 +310,7 @@ void InspireClient::fetchTitlesByRecids(const QList<int> &recids, TitlesCallback
 
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::UserAgentHeader,
-                      QStringLiteral("HEPShelf/0.9.0 local-literature-library"));
+                      QStringLiteral("HEPShelf/0.9.1 local-literature-library"));
     request.setRawHeader("Accept", "application/json");
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                          QNetworkRequest::NoLessSafeRedirectPolicy);

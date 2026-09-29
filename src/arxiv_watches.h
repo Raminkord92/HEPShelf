@@ -89,6 +89,7 @@ private:
     QDateTime activeEndUtc_;
     int pageStart_ = 0;
     int pageRetryCount_ = 0;
+    QString pageToken_;
     int newHitCount_ = 0;
     int newCitationCount_ = 0;
     int failedRuleCount_ = 0;

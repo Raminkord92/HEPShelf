@@ -19,7 +19,6 @@
 #include <algorithm>
 
 namespace {
-constexpr int PageSize = 100;
 constexpr qint64 ApiIntervalMs = 3100;
 
 QString utcString(const QDateTime &date)
@@ -72,11 +71,26 @@ PaperRecord readPaper(const QJsonObject &object)
     return paper;
 }
 
-QString escapedAuthor(QString author)
+bool matchesWatch(const PaperRecord &paper, const ArxivWatchRule &rule, const QDateTime &from, const QDateTime &until)
 {
-    author.replace(QLatin1Char('\\'), QStringLiteral("\\\\"));
-    author.replace(QLatin1Char('"'), QStringLiteral("\\\""));
-    return author;
+    const QDate submitted = QDate::fromString(paper.published.left(10), Qt::ISODate);
+    if (!submitted.isValid() || submitted < from.date() || submitted > until.date())
+        return false;
+    if (rule.kind == QStringLiteral("category"))
+        return paper.categories.split(QLatin1Char(' '), Qt::SkipEmptyParts).contains(rule.term, Qt::CaseInsensitive);
+    const QStringList wanted = rule.term.simplified().split(QLatin1Char(' '), Qt::SkipEmptyParts);
+    for (const QString &author : paper.authorNames) {
+        bool matches = true;
+        for (const QString &part : wanted) {
+            if (!author.contains(part, Qt::CaseInsensitive)) {
+                matches = false;
+                break;
+            }
+        }
+        if (matches)
+            return true;
+    }
+    return false;
 }
 
 QString filenameId(QString id)
@@ -441,6 +455,7 @@ void ArxivWatchManager::nextRule()
         activeEndUtc_ = QDateTime::currentDateTimeUtc();
         pageStart_ = 0;
         pageRetryCount_ = 0;
+        pageToken_.clear();
         if (activeRule_.kind == QStringLiteral("citation"))
             fetchCitations();
         else
@@ -573,22 +588,20 @@ void ArxivWatchManager::fetchPage()
     const QDateTime from = activeRule_.lastCheckedUtc.isValid()
                                ? activeRule_.lastCheckedUtc.addDays(-1)
                                : activeEndUtc_.addDays(-1);
-    const QString dateRange = QStringLiteral("submittedDate:[%1 TO %2]")
-                                  .arg(from.toUTC().toString(QStringLiteral("yyyyMMddhhmm")),
-                                       activeEndUtc_.toUTC().toString(QStringLiteral("yyyyMMddhhmm")));
-    const QString field = activeRule_.kind == QStringLiteral("author")
-                              ? QStringLiteral("au:\"%1\"").arg(escapedAuthor(activeRule_.term))
-                              : QStringLiteral("cat:%1").arg(activeRule_.term);
-    QUrl url(QStringLiteral("https://export.arxiv.org/api/query"));
+    QUrl url(QStringLiteral("https://oaipmh.arxiv.org/oai"));
     QUrlQuery query;
-    query.addQueryItem(QStringLiteral("search_query"), field + QStringLiteral(" AND ") + dateRange);
-    query.addQueryItem(QStringLiteral("start"), QString::number(pageStart_));
-    query.addQueryItem(QStringLiteral("max_results"), QString::number(PageSize));
-    query.addQueryItem(QStringLiteral("sortBy"), QStringLiteral("submittedDate"));
-    query.addQueryItem(QStringLiteral("sortOrder"), QStringLiteral("ascending"));
+    query.addQueryItem(QStringLiteral("verb"), QStringLiteral("ListRecords"));
+    if (pageToken_.isEmpty()) {
+        query.addQueryItem(QStringLiteral("metadataPrefix"), QStringLiteral("arXiv"));
+        query.addQueryItem(QStringLiteral("from"), from.toUTC().date().toString(Qt::ISODate));
+        if (activeRule_.kind == QStringLiteral("category") && activeRule_.term.startsWith(QStringLiteral("hep-")))
+            query.addQueryItem(QStringLiteral("set"), QStringLiteral("physics:%1").arg(activeRule_.term));
+    } else {
+        query.addQueryItem(QStringLiteral("resumptionToken"), pageToken_);
+    }
     url.setQuery(query);
     QNetworkRequest request(url);
-    request.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("HEPShelf/0.9.0 local-literature-library"));
+    request.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("HEPShelf/0.9.1 local-literature-library"));
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                          QNetworkRequest::NoLessSafeRedirectPolicy);
     request.setTransferTimeout(60000);
@@ -642,14 +655,27 @@ void ArxivWatchManager::fetchPage()
             return;
         }
         pageRetryCount_ = 0;
-        const ArxivFeedResult feed = parseArxivFeed(body);
+        const ArxivOaiResult feed = parseArxivOai(body);
         if (!feed.error.isEmpty()) {
             failActiveRule(feed.error);
             return;
         }
-        processPapers(feed.papers);
-        pageStart_ += feed.entryCount;
-        if (feed.entryCount == PageSize && (feed.totalResults == 0 || pageStart_ < feed.totalResults)) {
+        const QDateTime from = activeRule_.lastCheckedUtc.isValid()
+                                   ? activeRule_.lastCheckedUtc.addDays(-1)
+                                   : activeEndUtc_.addDays(-1);
+        QList<PaperRecord> matches;
+        for (const PaperRecord &paper : feed.papers) {
+            if (matchesWatch(paper, activeRule_, from, activeEndUtc_))
+                matches << paper;
+        }
+        processPapers(matches);
+        if (!feed.nextToken.isEmpty()) {
+            if (feed.nextToken == pageToken_) {
+                failActiveRule(QStringLiteral("arXiv repeated a metadata page token."));
+                return;
+            }
+            pageToken_ = feed.nextToken;
+            ++pageStart_;
             fetchPage();
             return;
         }
@@ -780,7 +806,7 @@ void ArxivWatchManager::nextDownload()
     downloading_ = true;
     downloadPrefix_.clear();
     QNetworkRequest request(QUrl(QStringLiteral("https://arxiv.org/pdf/%1.pdf").arg(paper.arxivId)));
-    request.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("HEPShelf/0.9.0 local-literature-library"));
+    request.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("HEPShelf/0.9.1 local-literature-library"));
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                          QNetworkRequest::NoLessSafeRedirectPolicy);
     request.setTransferTimeout(90000);

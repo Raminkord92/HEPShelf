@@ -272,7 +272,7 @@ Open **Library → Research watches…** to watch an author name, an arXiv categ
 
 Each watch can record new matches or automatically download matching arXiv PDFs into a folder you choose. Citation matches without an arXiv ID remain visible and link to INSPIRE, but cannot be downloaded from arXiv. The folder is added to HEPShelf's watched folders, and downloaded papers are indexed in the library. You can also download an individual match from the watch window.
 
-HEPShelf checks enabled watches every 24 hours while it runs, and catches up on the next launch if it was closed. A new author or category watch looks back 24 hours. The watch window has **Check now**, shows recent matches and download status, and the menu action shows the number of unseen matches. Author watches use arXiv's name search, so authors with the same name may both match. API failures leave a watch due for a later retry. Author and category checks use arXiv's submitted date, so a new version of an older paper is not treated as a new submission.
+HEPShelf checks enabled watches every 24 hours while it runs, and catches up on the next launch if it was closed. A new author or category watch checks submissions from the previous UTC date onward. The watch window has **Check now**, shows recent matches and download status, and the menu action shows the number of unseen matches. Author watches match names in arXiv's OAI metadata, so authors with the same name may both match. Service failures leave a watch due for a later retry. Author and category checks use the original submission date, so a new version of an older paper is not treated as a new submission.
 
 ## Integrated PDF reader
 

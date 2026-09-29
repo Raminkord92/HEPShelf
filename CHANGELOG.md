@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.1 — Research Watch update
+
+- Check new arXiv papers through arXiv's OAI metadata service, including author and category watches. This replaces the legacy search API request that could remain blocked by HTTP 429 rate limits.
+- Keep a failed watch due for a later check and show the server error in the watch dialog.
+- Label the arXiv discovery toolbar action so it is distinct from Add paper folder.
+
 ## 0.9.0 — first public release
 
 This is the first published HEPShelf build. Earlier version numbers described development milestones; they were not public releases.

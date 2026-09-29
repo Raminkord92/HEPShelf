@@ -277,8 +277,7 @@ void MainWindow::buildUi()
 
 void MainWindow::buildMenusAndToolbar()
 {
-    discoverAction_ = new QAction(style()->standardIcon(QStyle::SP_DialogOpenButton),
-                                  QStringLiteral("Discover on arXiv…"), this);
+    discoverAction_ = new QAction(QStringLiteral("Discover arXiv…"), this);
     discoverAction_->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+A")));
     watchesAction_ = new QAction(QStringLiteral("Research watches…"), this);
 
@@ -371,7 +370,7 @@ void MainWindow::buildMenusAndToolbar()
     helpMenu->addAction(QStringLiteral("About HEPShelf"), this, [this]() {
         QMessageBox::about(
             this, QStringLiteral("About HEPShelf"),
-            QStringLiteral("<b>HEPShelf 0.9.0</b><br><br>"
+            QStringLiteral("<b>HEPShelf 0.9.1</b><br><br>"
                            "A local, citation-oriented paper library designed for HEP workflows.<br><br>"
                            "This version adds persistent research notes and named literature trails that can be built from the library or citation graph, reordered, annotated, and exported."));
     });
