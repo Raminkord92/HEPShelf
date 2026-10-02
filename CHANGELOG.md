@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — PDF reader improvements
+
+- Select and copy text from PDFs with a text layer.
+- Save and remove text highlights in the local HEPShelf library.
+- Search within a PDF, navigate matches, and see matches highlighted on the page.
+- Keep automatically saved notes for each PDF page and quote selected text into a note.
+- Arrange reader controls in two rows and place citations and page notes in a shared sidebar.
+
+
 ## 0.9.3 — library layout refinement
 
 - Give the navigation, paper table, tabs, and details panel a consistent visual style and clearer spacing.

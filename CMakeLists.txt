@@ -20,6 +20,8 @@ qt_add_executable(hepshelf
     src/main.cpp
     src/mainwindow.cpp
     src/mainwindow.h
+    src/selectable_pdf_view.cpp
+    src/selectable_pdf_view.h
     src/database.cpp
     src/database.h
     src/arxiv_client.cpp

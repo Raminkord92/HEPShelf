@@ -19,8 +19,10 @@ class QGroupBox;
 class QListWidget;
 class QMenu;
 class QPdfDocument;
+class QPdfSearchModel;
 class QPdfLink;
 class QPdfView;
+class SelectablePdfView;
 class QPlainTextEdit;
 class QProgressBar;
 class QPoint;
@@ -118,6 +120,10 @@ private:
 
     void updateReaderForDocumentStatus();
     void updateReaderPage(int zeroBasedPage);
+    void updateReaderSearch();
+    void stepReaderSearch(int direction);
+    void loadReaderPageNote();
+    void saveReaderPageNote();
     void readerPreviousPage();
     void readerNextPage();
     void readerZoomIn();
@@ -165,6 +171,11 @@ private:
     bool readerReferencesLoading_ = false;
     int readerPreviousPage_ = -1;
     bool suppressPdfCitationJump_ = false;
+    int readerSearchIndex_ = -1;
+    bool loadingReaderPageNote_ = false;
+    bool readerPageNoteDirty_ = false;
+    int readerPageNotePage_ = -1;
+    QString readerPageNoteArxivId_;
 
     QString currentDetailsArxivId_;
     bool loadingPaperNote_ = false;
@@ -238,7 +249,19 @@ private:
     QProgressBar *progress_ = nullptr;
 
     QPdfDocument *pdfDocument_ = nullptr;
-    QPdfView *pdfView_ = nullptr;
+    QPdfSearchModel *readerSearchModel_ = nullptr;
+    SelectablePdfView *pdfView_ = nullptr;
+    QWidget *readerSearchBar_ = nullptr;
+    QLineEdit *readerSearchEdit_ = nullptr;
+    QLabel *readerSearchCount_ = nullptr;
+    QPushButton *readerSearchPrevButton_ = nullptr;
+    QPushButton *readerSearchNextButton_ = nullptr;
+    QTabWidget *readerSideTabs_ = nullptr;
+    QPlainTextEdit *readerPageNoteEdit_ = nullptr;
+    QLabel *readerPageNoteHeading_ = nullptr;
+    QLabel *readerPageNoteStatus_ = nullptr;
+    QTimer *readerPageNoteSaveTimer_ = nullptr;
+    QPushButton *readerHighlightButton_ = nullptr;
     QLabel *readerTitle_ = nullptr;
     QSpinBox *pageSpin_ = nullptr;
     QLabel *pageCountLabel_ = nullptr;

@@ -5,6 +5,7 @@
 #include "cited_by_dialog.h"
 #include "citation_graph_dialog.h"
 #include "literature_trails_dialog.h"
+#include "selectable_pdf_view.h"
 
 #include <QAbstractItemView>
 #include <QAction>
@@ -44,6 +45,7 @@
 #include <QPdfLink>
 #include <QPdfPageNavigator>
 #include <QPdfSelection>
+#include <QPdfSearchModel>
 #include <QPdfView>
 #include <QPointF>
 #include <QProgressBar>
@@ -440,6 +442,12 @@ void MainWindow::buildMenusAndToolbar()
     focusSearch->setShortcut(QKeySequence::Find);
     addAction(focusSearch);
     connect(focusSearch, &QAction::triggered, this, [this]() {
+        if (tabs_ && tabs_->currentIndex() == 1 && readerSearchBar_) {
+            readerSearchBar_->show();
+            readerSearchEdit_->setFocus();
+            readerSearchEdit_->selectAll();
+            return;
+        }
         search_->setFocus();
         search_->selectAll();
     });
@@ -822,9 +830,15 @@ QWidget *MainWindow::buildReaderPage()
 
     auto *controls = new QWidget(page);
     controls->setObjectName(QStringLiteral("readerControls"));
-    auto *controlLayout = new QHBoxLayout(controls);
-    controlLayout->setContentsMargins(8, 7, 8, 7);
+    auto *controlsLayout = new QVBoxLayout(controls);
+    controlsLayout->setContentsMargins(8, 7, 8, 7);
+    controlsLayout->setSpacing(5);
+    auto *controlLayout = new QHBoxLayout();
     controlLayout->setSpacing(6);
+    auto *toolsLayout = new QHBoxLayout();
+    toolsLayout->setSpacing(6);
+    controlsLayout->addLayout(controlLayout);
+    controlsLayout->addLayout(toolsLayout);
 
     auto *backToLibrary = new QPushButton(QStringLiteral("← Library"), controls);
     readerHistoryBackButton_ = new QPushButton(QStringLiteral("←"), controls);
@@ -853,32 +867,72 @@ QWidget *MainWindow::buildReaderPage()
     zoomIn->setToolTip(QStringLiteral("Zoom in"));
     auto *fitWidth = new QPushButton(QStringLiteral("Fit width"), controls);
     auto *fitPage = new QPushButton(QStringLiteral("Fit page"), controls);
-    readerCitationToggleButton_ = new QPushButton(QStringLiteral("Citations"), controls);
+    auto *findText = new QPushButton(QStringLiteral("Find"), controls);
+    findText->setToolTip(QStringLiteral("Search in this PDF (Ctrl+F)"));
+    auto *copyText = new QPushButton(QStringLiteral("Copy"), controls);
+    copyText->setToolTip(QStringLiteral("Drag over PDF text, then copy it (Ctrl+C)"));
+    copyText->setEnabled(false);
+    readerHighlightButton_ = new QPushButton(QStringLiteral("Highlight"), controls);
+    readerHighlightButton_->setObjectName(QStringLiteral("readerHighlightButton"));
+    readerHighlightButton_->setToolTip(QStringLiteral("Save a highlight for the selected PDF text"));
+    readerHighlightButton_->setEnabled(false);
+    readerCitationToggleButton_ = new QPushButton(QStringLiteral("Sidebar"), controls);
     readerCitationToggleButton_->setCheckable(true);
     readerCitationToggleButton_->setChecked(true);
-    readerCitationToggleButton_->setToolTip(QStringLiteral("Show or hide the citation navigator"));
+    readerCitationToggleButton_->setToolTip(QStringLiteral("Show or hide citations and page notes"));
     readerExternalButton_ = new QPushButton(QStringLiteral("External viewer"), controls);
 
     controlLayout->addWidget(backToLibrary);
     controlLayout->addWidget(readerHistoryBackButton_);
     controlLayout->addWidget(readerHistoryForwardButton_);
     controlLayout->addWidget(readerTitle_, 1);
-    controlLayout->addWidget(readerPrevButton_);
-    controlLayout->addWidget(readerNextButton_);
-    controlLayout->addWidget(pageSpin_);
-    controlLayout->addWidget(pageCountLabel_);
-    controlLayout->addSpacing(8);
-    controlLayout->addWidget(zoomOut);
-    controlLayout->addWidget(zoomIn);
-    controlLayout->addWidget(fitWidth);
-    controlLayout->addWidget(fitPage);
-    controlLayout->addSpacing(8);
     controlLayout->addWidget(readerCitationToggleButton_);
     controlLayout->addWidget(readerExternalButton_);
+    toolsLayout->addWidget(readerPrevButton_);
+    toolsLayout->addWidget(readerNextButton_);
+    toolsLayout->addWidget(pageSpin_);
+    toolsLayout->addWidget(pageCountLabel_);
+    toolsLayout->addSpacing(10);
+    toolsLayout->addWidget(zoomOut);
+    toolsLayout->addWidget(zoomIn);
+    toolsLayout->addWidget(fitWidth);
+    toolsLayout->addWidget(fitPage);
+    toolsLayout->addSpacing(10);
+    toolsLayout->addWidget(findText);
+    toolsLayout->addWidget(copyText);
+    toolsLayout->addWidget(readerHighlightButton_);
+    toolsLayout->addStretch(1);
     layout->addWidget(controls);
 
+    readerSearchBar_ = new QWidget(page);
+    readerSearchBar_->setObjectName(QStringLiteral("readerSearchBar"));
+    auto *searchLayout = new QHBoxLayout(readerSearchBar_);
+    searchLayout->setContentsMargins(10, 5, 10, 5);
+    searchLayout->addWidget(new QLabel(QStringLiteral("Find in PDF"), readerSearchBar_));
+    readerSearchEdit_ = new QLineEdit(readerSearchBar_);
+    readerSearchEdit_->setPlaceholderText(QStringLiteral("Type a word or phrase"));
+    readerSearchEdit_->setClearButtonEnabled(true);
+    searchLayout->addWidget(readerSearchEdit_, 1);
+    readerSearchCount_ = new QLabel(QStringLiteral("0 matches"), readerSearchBar_);
+    searchLayout->addWidget(readerSearchCount_);
+    readerSearchPrevButton_ = new QPushButton(QStringLiteral("↑"), readerSearchBar_);
+    readerSearchPrevButton_->setToolTip(QStringLiteral("Previous match (Shift+F3)"));
+    readerSearchNextButton_ = new QPushButton(QStringLiteral("↓"), readerSearchBar_);
+    readerSearchNextButton_->setToolTip(QStringLiteral("Next match (F3)"));
+    readerSearchPrevButton_->setEnabled(false);
+    readerSearchNextButton_->setEnabled(false);
+    searchLayout->addWidget(readerSearchPrevButton_);
+    searchLayout->addWidget(readerSearchNextButton_);
+    auto *closeSearch = new QPushButton(QStringLiteral("×"), readerSearchBar_);
+    closeSearch->setToolTip(QStringLiteral("Close search (Esc)"));
+    searchLayout->addWidget(closeSearch);
+    layout->addWidget(readerSearchBar_);
+    readerSearchBar_->hide();
+
     pdfDocument_ = new QPdfDocument(this);
-    pdfView_ = new QPdfView(page);
+    readerSearchModel_ = new QPdfSearchModel(this);
+    readerSearchModel_->setDocument(pdfDocument_);
+    pdfView_ = new SelectablePdfView(page);
     pdfView_->setDocument(pdfDocument_);
     pdfView_->setPageMode(QPdfView::PageMode::MultiPage);
     pdfView_->setZoomMode(QPdfView::ZoomMode::FitToWidth);
@@ -888,7 +942,11 @@ QWidget *MainWindow::buildReaderPage()
     readerSplitter->setChildrenCollapsible(false);
     readerSplitter->addWidget(pdfView_);
 
-    readerCitationPanel_ = new QWidget(readerSplitter);
+    readerSideTabs_ = new QTabWidget(readerSplitter);
+    readerSideTabs_->setObjectName(QStringLiteral("readerSidebar"));
+    readerSideTabs_->setMinimumWidth(270);
+    readerSideTabs_->setMaximumWidth(460);
+    readerCitationPanel_ = new QWidget(readerSideTabs_);
     readerCitationPanel_->setObjectName(QStringLiteral("citationPanel"));
     readerCitationPanel_->setMinimumWidth(270);
     readerCitationPanel_->setMaximumWidth(460);
@@ -941,7 +999,47 @@ QWidget *MainWindow::buildReaderPage()
     hint->setObjectName(QStringLiteral("citationHint"));
     citationLayout->addWidget(hint);
 
-    readerSplitter->addWidget(readerCitationPanel_);
+    readerSideTabs_->addTab(readerCitationPanel_, QStringLiteral("Citations"));
+    auto *notesPanel = new QWidget(readerSideTabs_);
+    auto *notesLayout = new QVBoxLayout(notesPanel);
+    notesLayout->setContentsMargins(14, 14, 14, 14);
+    notesLayout->setSpacing(8);
+    readerPageNoteHeading_ = new QLabel(QStringLiteral("Page notes"), notesPanel);
+    QFont notesFont = readerPageNoteHeading_->font();
+    notesFont.setBold(true);
+    readerPageNoteHeading_->setFont(notesFont);
+    notesLayout->addWidget(readerPageNoteHeading_);
+    auto *notesHint = new QLabel(QStringLiteral("Write observations for this page. Notes and highlights stay in your HEPShelf library."), notesPanel);
+    notesHint->setWordWrap(true);
+    notesLayout->addWidget(notesHint);
+    auto *quoteSelection = new QPushButton(QStringLiteral("Add selected text to note"), notesPanel);
+    quoteSelection->setEnabled(false);
+    quoteSelection->setToolTip(QStringLiteral("Quote the selected PDF text in this page's note"));
+    notesLayout->addWidget(quoteSelection);
+    readerPageNoteEdit_ = new QPlainTextEdit(notesPanel);
+    readerPageNoteEdit_->setPlaceholderText(QStringLiteral("Add a note for this page…"));
+    notesLayout->addWidget(readerPageNoteEdit_, 1);
+    readerPageNoteStatus_ = new QLabel(QStringLiteral("Notes save automatically"), notesPanel);
+    notesLayout->addWidget(readerPageNoteStatus_);
+    readerSideTabs_->addTab(notesPanel, QStringLiteral("Page notes"));
+    connect(pdfView_, &SelectablePdfView::selectionChanged, quoteSelection, &QPushButton::setEnabled);
+    connect(quoteSelection, &QPushButton::clicked, this, [this]() {
+        const auto ranges = pdfView_->selectedRanges();
+        if (ranges.isEmpty()) return;
+        readerSideTabs_->setCurrentIndex(1);
+        const int page = ranges.first().page;
+        if (page != pendingReaderPage_)
+            pdfView_->pageNavigator()->jump(page, {}, 0);
+        const QString quote = pdfView_->selectedText().trimmed();
+        if (!quote.isEmpty()) {
+            if (!readerPageNoteEdit_->toPlainText().trimmed().isEmpty())
+                readerPageNoteEdit_->appendPlainText(QString());
+            readerPageNoteEdit_->appendPlainText(QStringLiteral("“%1”").arg(quote));
+            readerPageNoteEdit_->setFocus();
+        }
+    });
+
+    readerSplitter->addWidget(readerSideTabs_);
     readerSplitter->setStretchFactor(0, 1);
     readerSplitter->setStretchFactor(1, 0);
     readerSplitter->setSizes({1000, 330});
@@ -956,9 +1054,75 @@ QWidget *MainWindow::buildReaderPage()
     connect(zoomOut, &QPushButton::clicked, this, [this]() { readerZoomOut(); });
     connect(fitWidth, &QPushButton::clicked, this, [this]() { readerFitWidth(); });
     connect(fitPage, &QPushButton::clicked, this, [this]() { readerFitPage(); });
+    const auto showSearch = [this]() {
+        readerSearchBar_->show();
+        readerSearchEdit_->setFocus();
+        readerSearchEdit_->selectAll();
+    };
+    connect(findText, &QPushButton::clicked, this, showSearch);
+    connect(closeSearch, &QPushButton::clicked, this, [this]() {
+        readerSearchEdit_->clear();
+        readerSearchBar_->hide();
+        pdfView_->setFocus();
+    });
+    auto *searchDelay = new QTimer(this);
+    searchDelay->setSingleShot(true);
+    searchDelay->setInterval(180);
+    connect(readerSearchEdit_, &QLineEdit::textChanged, searchDelay, qOverload<>(&QTimer::start));
+    connect(searchDelay, &QTimer::timeout, this, [this]() {
+        readerSearchIndex_ = -1;
+        readerSearchModel_->setSearchString(readerSearchEdit_->text());
+        updateReaderSearch();
+    });
+    connect(readerSearchModel_, &QAbstractItemModel::rowsInserted, this,
+            [this](const QModelIndex &, int, int) { updateReaderSearch(); });
+    connect(readerSearchModel_, &QAbstractItemModel::rowsRemoved, this,
+            [this](const QModelIndex &, int, int) { updateReaderSearch(); });
+    connect(readerSearchModel_, &QAbstractItemModel::modelReset, this,
+            [this]() { updateReaderSearch(); });
+    connect(readerSearchPrevButton_, &QPushButton::clicked, this, [this]() { stepReaderSearch(-1); });
+    connect(readerSearchNextButton_, &QPushButton::clicked, this, [this]() { stepReaderSearch(1); });
+    connect(readerSearchEdit_, &QLineEdit::returnPressed, this, [this]() { stepReaderSearch(1); });
+    readerPageNoteSaveTimer_ = new QTimer(this);
+    readerPageNoteSaveTimer_->setSingleShot(true);
+    readerPageNoteSaveTimer_->setInterval(500);
+    connect(readerPageNoteSaveTimer_, &QTimer::timeout, this, [this]() { saveReaderPageNote(); });
+    connect(readerPageNoteEdit_, &QPlainTextEdit::textChanged, this, [this]() {
+        if (loadingReaderPageNote_ || readerPageNoteArxivId_.isEmpty()) return;
+        readerPageNoteDirty_ = true;
+        readerPageNoteStatus_->setText(QStringLiteral("Saving…"));
+        readerPageNoteSaveTimer_->start();
+    });
+    connect(pdfView_, &SelectablePdfView::selectionChanged, readerHighlightButton_, &QPushButton::setEnabled);
+    connect(pdfView_, &SelectablePdfView::selectionChanged, copyText, &QPushButton::setEnabled);
+    connect(copyText, &QPushButton::clicked, pdfView_, &SelectablePdfView::copySelection);
+    auto addHighlight = [this]() {
+        if (currentReaderArxivId_.isEmpty()) return;
+        const auto ranges = pdfView_->selectedRanges();
+        QString error;
+        for (const auto &range : ranges) {
+            if (range.length <= 0 || !db_.addPaperHighlight(currentReaderArxivId_, range, &error)) {
+                if (!error.isEmpty()) showDatabaseError(QStringLiteral("Could not save highlight"), error);
+                return;
+            }
+        }
+        pdfView_->setHighlights(db_.paperHighlights(currentReaderArxivId_, nullptr));
+        pdfView_->clearSelection();
+        statusBar()->showMessage(QStringLiteral("Highlight saved in HEPShelf"), 3000);
+    };
+    auto removeHighlight = [this](int id) {
+        QString error;
+        if (!db_.removePaperHighlight(id, &error)) {
+            showDatabaseError(QStringLiteral("Could not remove highlight"), error);
+            return;
+        }
+        pdfView_->setHighlights(db_.paperHighlights(currentReaderArxivId_, nullptr));
+    };
+    connect(readerHighlightButton_, &QPushButton::clicked, this, addHighlight);
+    pdfView_->setHighlightActions(addHighlight, removeHighlight);
     connect(readerCitationToggleButton_, &QPushButton::toggled, this, [this](bool visible) {
-        if (readerCitationPanel_)
-            readerCitationPanel_->setVisible(visible);
+        if (readerSideTabs_)
+            readerSideTabs_->setVisible(visible);
     });
     connect(readerExternalButton_, &QPushButton::clicked, this, [this]() {
         if (!currentReaderPath_.isEmpty())
@@ -994,6 +1158,22 @@ QWidget *MainWindow::buildReaderPage()
 
     connect(pdfView_->pageNavigator(), &QPdfPageNavigator::jumped,
             this, [this](const QPdfLink &link) { handlePdfJumped(link); });
+
+    auto *nextMatchShortcut = new QAction(page);
+    nextMatchShortcut->setShortcut(QKeySequence(QStringLiteral("F3")));
+    nextMatchShortcut->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    page->addAction(nextMatchShortcut);
+    connect(nextMatchShortcut, &QAction::triggered, this, [this]() { stepReaderSearch(1); });
+    auto *previousMatchShortcut = new QAction(page);
+    previousMatchShortcut->setShortcut(QKeySequence(QStringLiteral("Shift+F3")));
+    previousMatchShortcut->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    page->addAction(previousMatchShortcut);
+    connect(previousMatchShortcut, &QAction::triggered, this, [this]() { stepReaderSearch(-1); });
+    auto *closeSearchShortcut = new QAction(readerSearchBar_);
+    closeSearchShortcut->setShortcut(QKeySequence(Qt::Key_Escape));
+    closeSearchShortcut->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    readerSearchBar_->addAction(closeSearchShortcut);
+    connect(closeSearchShortcut, &QAction::triggered, closeSearch, &QPushButton::click);
 
     auto *historyBackShortcut = new QAction(page);
     historyBackShortcut->setShortcut(QKeySequence(QStringLiteral("Alt+Left")));
@@ -1249,6 +1429,19 @@ void MainWindow::applyProfessionalStyle()
             border-bottom: 1px solid palette(mid);
             background: palette(window);
         }
+        QWidget#readerSearchBar {
+            border-bottom: 1px solid #cfdeec;
+            background: #edf5fc;
+        }
+        QPushButton#readerHighlightButton:enabled {
+            border-color: #d2af4b;
+            background: #fff4ca;
+            color: #6b4b11;
+        }
+        QTabWidget#readerSidebar {
+            border-left: 1px solid #d4e2ee;
+            background: #ffffff;
+        }
         QLabel#readerTitle {
             font-weight: 600;
         }
@@ -1342,6 +1535,7 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
+    saveReaderPageNote();
     if (paperNoteDirty_)
         saveCurrentPaperNote(true);
     saveUiState();
@@ -2901,6 +3095,7 @@ void MainWindow::openPaperInReader(const QString &arxivId,
                                    bool pushHistory,
                                    int pageOverride)
 {
+    saveReaderPageNote();
     if (!QFileInfo::exists(path)) {
         QMessageBox::warning(this, QStringLiteral("HEPShelf"),
                              QStringLiteral("The local file no longer exists:\n%1").arg(path));
@@ -2929,6 +3124,15 @@ void MainWindow::openPaperInReader(const QString &arxivId,
 
     currentReaderArxivId_ = arxivId;
     currentReaderPath_ = path;
+    readerSearchIndex_ = -1;
+    readerSearchEdit_->blockSignals(true);
+    readerSearchEdit_->clear();
+    readerSearchEdit_->blockSignals(false);
+    readerSearchModel_->setSearchString({});
+    updateReaderSearch();
+    readerSearchBar_->hide();
+    pdfView_->clearSelection();
+    pdfView_->setHighlights(db_.paperHighlights(arxivId, nullptr));
     pendingReaderPage_ = pageOverride >= 0 ? pageOverride : details.lastPage;
     readerPreviousPage_ = -1;
     readerTitle_->setText(displayTitle(details));
@@ -3334,6 +3538,7 @@ void MainWindow::updateReaderForDocumentStatus()
             const int page = qBound(0, pendingReaderPage_, count - 1);
             pendingReaderPage_ = page;
             pdfView_->pageNavigator()->jump(page, QPointF(0, 0), 0);
+            loadReaderPageNote();
             db_.setReadingProgress(currentReaderArxivId_, page, count, nullptr);
             QTimer::singleShot(0, this, [this]() { updateReaderCitationPanel(); });
         }
@@ -3352,6 +3557,8 @@ void MainWindow::updateReaderPage(int zeroBasedPage)
 
     if (pendingReaderPage_ != zeroBasedPage)
         readerPreviousPage_ = pendingReaderPage_;
+    if (readerPageNotePage_ != zeroBasedPage || readerPageNoteArxivId_ != currentReaderArxivId_)
+        saveReaderPageNote();
     pendingReaderPage_ = zeroBasedPage;
     pageSpin_->blockSignals(true);
     pageSpin_->setValue(zeroBasedPage + 1);
@@ -3366,6 +3573,66 @@ void MainWindow::updateReaderPage(int zeroBasedPage)
     }
 
     updateReaderCitationPanel();
+    loadReaderPageNote();
+}
+
+void MainWindow::updateReaderSearch()
+{
+    const int count = readerSearchModel_->rowCount({});
+    const bool hasQuery = !readerSearchEdit_->text().trimmed().isEmpty();
+    if (!hasQuery || count <= 0) readerSearchIndex_ = -1;
+    else if (readerSearchIndex_ < 0 || readerSearchIndex_ >= count) readerSearchIndex_ = 0;
+    readerSearchCount_->setText(!hasQuery ? QStringLiteral("0 matches")
+        : readerSearchIndex_ < 0 ? QStringLiteral("No matches")
+        : QStringLiteral("%1 of %2").arg(readerSearchIndex_ + 1).arg(count));
+    readerSearchPrevButton_->setEnabled(readerSearchIndex_ >= 0);
+    readerSearchNextButton_->setEnabled(readerSearchIndex_ >= 0);
+    QList<QPdfLink> results;
+    if (hasQuery) {
+        results.reserve(count);
+        for (int i = 0; i < count; ++i) results << readerSearchModel_->resultAtIndex(i);
+    }
+    pdfView_->setSearchResults(results, readerSearchIndex_);
+    if (readerSearchIndex_ >= 0 && !results.isEmpty())
+        pdfView_->scrollToSearchResult(results.at(readerSearchIndex_));
+}
+
+void MainWindow::stepReaderSearch(int direction)
+{
+    const int count = readerSearchModel_->rowCount({});
+    if (count <= 0 || readerSearchEdit_->text().trimmed().isEmpty()) return;
+    readerSearchIndex_ = (readerSearchIndex_ + direction + count) % count;
+    updateReaderSearch();
+}
+
+void MainWindow::saveReaderPageNote()
+{
+    if (!readerPageNoteDirty_ || readerPageNoteArxivId_.isEmpty() || readerPageNotePage_ < 0) return;
+    readerPageNoteSaveTimer_->stop();
+    QString error;
+    if (!db_.setPaperPageNote(readerPageNoteArxivId_, readerPageNotePage_, readerPageNoteEdit_->toPlainText(), &error)) {
+        readerPageNoteStatus_->setText(QStringLiteral("Could not save note: %1").arg(error));
+        return;
+    }
+    readerPageNoteDirty_ = false;
+    readerPageNoteStatus_->setText(QStringLiteral("Saved in HEPShelf"));
+}
+
+void MainWindow::loadReaderPageNote()
+{
+    if (!readerPageNoteEdit_ || currentReaderArxivId_.isEmpty() || pdfDocument_->status() != QPdfDocument::Status::Ready)
+        return;
+    const int page = qBound(0, pendingReaderPage_, qMax(0, pdfDocument_->pageCount() - 1));
+    if (readerPageNoteArxivId_ == currentReaderArxivId_ && readerPageNotePage_ == page) return;
+    saveReaderPageNote();
+    readerPageNoteArxivId_ = currentReaderArxivId_;
+    readerPageNotePage_ = page;
+    loadingReaderPageNote_ = true;
+    readerPageNoteEdit_->setPlainText(db_.paperPageNote(currentReaderArxivId_, page, nullptr));
+    loadingReaderPageNote_ = false;
+    readerPageNoteDirty_ = false;
+    readerPageNoteHeading_->setText(QStringLiteral("Notes · page %1").arg(page + 1));
+    readerPageNoteStatus_->setText(QStringLiteral("Notes save automatically"));
 }
 
 void MainWindow::readerPreviousPage()

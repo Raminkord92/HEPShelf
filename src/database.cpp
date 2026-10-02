@@ -258,6 +258,28 @@ bool Database::execSchema(QString *error)
             )
         )SQL"),
         QStringLiteral(R"SQL(
+            CREATE TABLE IF NOT EXISTS paper_highlights (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                arxiv_id TEXT NOT NULL,
+                page INTEGER NOT NULL,
+                start_index INTEGER NOT NULL,
+                length INTEGER NOT NULL,
+                text TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(arxiv_id) REFERENCES papers(arxiv_id) ON DELETE CASCADE
+            )
+        )SQL"),
+        QStringLiteral(R"SQL(
+            CREATE TABLE IF NOT EXISTS paper_page_notes (
+                arxiv_id TEXT NOT NULL,
+                page INTEGER NOT NULL,
+                note TEXT NOT NULL,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY(arxiv_id, page),
+                FOREIGN KEY(arxiv_id) REFERENCES papers(arxiv_id) ON DELETE CASCADE
+            )
+        )SQL"),
+        QStringLiteral(R"SQL(
             CREATE TABLE IF NOT EXISTS literature_trails (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL UNIQUE COLLATE NOCASE,
@@ -1333,6 +1355,76 @@ bool Database::setPaperNote(const QString &arxivId, const QString &text, QString
     }
     if (!q.exec())
         return setError(error, q.lastError().text());
+    return true;
+}
+
+QList<PaperHighlightRecord> Database::paperHighlights(const QString &arxivId, QString *error) const
+{
+    QList<PaperHighlightRecord> result;
+    QSqlQuery q(db_);
+    q.prepare(QStringLiteral("SELECT id, page, start_index, length, text FROM paper_highlights WHERE arxiv_id = ? ORDER BY page, start_index"));
+    q.addBindValue(arxivId);
+    if (!q.exec()) {
+        setError(error, q.lastError().text());
+        return result;
+    }
+    while (q.next())
+        result << PaperHighlightRecord{q.value(0).toInt(), q.value(1).toInt(), q.value(2).toInt(), q.value(3).toInt(), q.value(4).toString()};
+    return result;
+}
+
+bool Database::addPaperHighlight(const QString &arxivId, const PaperHighlightRecord &highlight, QString *error)
+{
+    QSqlQuery q(db_);
+    q.prepare(QStringLiteral("INSERT INTO paper_highlights(arxiv_id, page, start_index, length, text) VALUES (?, ?, ?, ?, ?)"));
+    q.addBindValue(arxivId);
+    q.addBindValue(highlight.page);
+    q.addBindValue(highlight.startIndex);
+    q.addBindValue(highlight.length);
+    q.addBindValue(highlight.text);
+    if (!q.exec())
+        return setError(error, q.lastError().text());
+    return true;
+}
+
+bool Database::removePaperHighlight(int id, QString *error)
+{
+    QSqlQuery q(db_);
+    q.prepare(QStringLiteral("DELETE FROM paper_highlights WHERE id = ?"));
+    q.addBindValue(id);
+    if (!q.exec())
+        return setError(error, q.lastError().text());
+    return true;
+}
+
+QString Database::paperPageNote(const QString &arxivId, int page, QString *error) const
+{
+    QSqlQuery q(db_);
+    q.prepare(QStringLiteral("SELECT note FROM paper_page_notes WHERE arxiv_id = ? AND page = ?"));
+    q.addBindValue(arxivId);
+    q.addBindValue(page);
+    if (!q.exec()) {
+        setError(error, q.lastError().text());
+        return {};
+    }
+    return q.next() ? q.value(0).toString() : QString();
+}
+
+bool Database::setPaperPageNote(const QString &arxivId, int page, const QString &text, QString *error)
+{
+    QSqlQuery q(db_);
+    if (text.trimmed().isEmpty()) {
+        q.prepare(QStringLiteral("DELETE FROM paper_page_notes WHERE arxiv_id = ? AND page = ?"));
+        q.addBindValue(arxivId);
+        q.addBindValue(page);
+    } else {
+        q.prepare(QStringLiteral("INSERT INTO paper_page_notes(arxiv_id, page, note, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP) "
+                                 "ON CONFLICT(arxiv_id, page) DO UPDATE SET note = excluded.note, updated_at = CURRENT_TIMESTAMP"));
+        q.addBindValue(arxivId);
+        q.addBindValue(page);
+        q.addBindValue(text);
+    }
+    if (!q.exec()) return setError(error, q.lastError().text());
     return true;
 }
 

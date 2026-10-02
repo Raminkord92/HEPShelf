@@ -94,6 +94,14 @@ struct PaperNoteRecord {
     QString updatedAt;
 };
 
+struct PaperHighlightRecord {
+    int id = 0;
+    int page = 0;
+    int startIndex = 0;
+    int length = 0;
+    QString text;
+};
+
 struct LiteratureTrailRecord {
     int id = 0;
     QString name;
@@ -212,6 +220,11 @@ public:
 
     PaperNoteRecord paperNote(const QString &arxivId, QString *error = nullptr) const;
     bool setPaperNote(const QString &arxivId, const QString &text, QString *error = nullptr);
+    QList<PaperHighlightRecord> paperHighlights(const QString &arxivId, QString *error = nullptr) const;
+    bool addPaperHighlight(const QString &arxivId, const PaperHighlightRecord &highlight, QString *error = nullptr);
+    bool removePaperHighlight(int id, QString *error = nullptr);
+    QString paperPageNote(const QString &arxivId, int page, QString *error = nullptr) const;
+    bool setPaperPageNote(const QString &arxivId, int page, const QString &text, QString *error = nullptr);
 
     QList<LiteratureTrailRecord> literatureTrails(QString *error = nullptr) const;
     QList<LiteratureTrailRecord> literatureTrailsForPaper(const QString &arxivId, QString *error = nullptr) const;

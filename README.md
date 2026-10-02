@@ -196,7 +196,10 @@ Keyboard shortcuts:
 ```text
 Alt+Left        Reader history back
 Alt+Right       Reader history forward
-Ctrl+Shift+C    Toggle citation navigator
+Ctrl+C          Copy selected PDF text
+Ctrl+F          Find text in the PDF
+F3 / Shift+F3  Next / previous match
+Ctrl+Shift+C    Toggle reader sidebar
 ```
 
 ## References and missing-paper acquisition
@@ -283,11 +286,16 @@ The reader provides:
 - direct page entry;
 - zoom in/out;
 - fit width and fit page;
+- drag selection, copy text, and saved text highlights (use the toolbar or right-click menu);
+- in-document search with match navigation;
+- automatically saved notes for each PDF page in the reader sidebar;
 - system-viewer fallback;
 - persistent reading position;
 - current-page citation detection;
 - local citation following;
 - cross-paper Back/Forward navigation.
+
+Highlights and page notes are stored in HEPShelf's local library database and do not alter the PDF file. Search and text selection require a PDF text layer; image-only scans need OCR first.
 
 ## Existing local-paper recognition
 
