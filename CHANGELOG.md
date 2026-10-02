@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — PDF reader improvements
+## 0.9.4 — PDF reader improvements
 
 - Select and copy text from PDFs with a text layer.
 - Save and remove text highlights in the local HEPShelf library.

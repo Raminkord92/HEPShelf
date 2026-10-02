@@ -14,9 +14,9 @@ Launch **HEPShelf** from the application menu or run `hepshelf`. Package depende
 
 The release workflow builds, tests, and packages the application. It attaches the installer to version tags and keeps packages from manual runs as GitHub Actions artifacts.
 
-## Try the Windows build
+## Install on Windows
 
-The **Windows build** GitHub Actions workflow creates a 64-bit ZIP. Download it from this repository's **Releases** page, extract it, and launch `HEPShelf/hepshelf.exe`. Keep the bundled DLLs and plugin folders beside the executable. If Windows reports a missing Microsoft C++ runtime, install the current [Microsoft Visual C++ Redistributable (x64)](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist) and try again. 
+Download `HEPShelf-setup-x64.exe` from this repository's **Releases** page and run it to install HEPShelf for your Windows account. The Windows build workflow also provides `HEPShelf-windows-x64.zip` for portable use: extract it, launch `HEPShelf/hepshelf.exe`, and keep the bundled DLLs and plugin folders beside the executable. These builds are produced by GitHub Actions and are unsigned, so Windows may show a publisher warning. If Windows reports a missing Microsoft C++ runtime, install the current [Microsoft Visual C++ Redistributable (x64)](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist) and try again.
 
 ## Try the macOS build
 

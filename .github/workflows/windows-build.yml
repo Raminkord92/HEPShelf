@@ -40,8 +40,31 @@ jobs:
           if (!(Test-Path dist/HEPShelf/sqldrivers/qsqlite.dll)) { throw "Qt SQLite plugin is missing" }
           if (!(Test-Path dist/HEPShelf/Qt6Pdf.dll)) { throw "Qt PDF library is missing" }
           Compress-Archive -Path dist/HEPShelf -DestinationPath dist/HEPShelf-windows-x64.zip
+      - name: Create Windows installer
+        shell: pwsh
+        run: |
+          $version = [regex]::Match((Get-Content CMakeLists.txt -Raw), 'project\(HEPShelf VERSION ([0-9.]+)').Groups[1].Value
+          if (!$version) { throw "Could not read HEPShelf version" }
+          $nsis = (Get-Command makensis -ErrorAction SilentlyContinue).Source
+          if (!$nsis) { $nsis = "${env:ProgramFiles(x86)}\NSIS\makensis.exe" }
+          if (!(Test-Path $nsis)) { throw "NSIS is unavailable" }
+          $source = (Resolve-Path dist/HEPShelf).Path
+          $output = Join-Path $PWD.Path 'dist/HEPShelf-setup-x64.exe'
+          & $nsis "/DAPP_VERSION=$version" "/DSOURCE_DIR=$source" "/DOUTPUT_FILE=$output" packaging/windows-installer.nsi
+          if ($LASTEXITCODE -ne 0) { throw "NSIS installer build failed" }
+          if ((Get-Item $output).Length -lt 1000000) { throw "Installer is unexpectedly small" }
+          $signature = [System.IO.File]::ReadAllBytes($output)[0..1]
+          if ($signature[0] -ne 77 -or $signature[1] -ne 90) { throw "Installer is not a Windows executable" }
+          $installPath = Join-Path $env:TEMP 'HEPShelf-installer-smoke'
+          $installed = Start-Process -FilePath $output -ArgumentList '/S', "/D=$installPath" -Wait -PassThru
+          if ($installed.ExitCode -ne 0) { throw "Installer smoke test failed" }
+          if (!(Test-Path (Join-Path $installPath 'hepshelf.exe'))) { throw "Installed executable is missing" }
+          if (!(Test-Path (Join-Path $installPath 'Qt6Pdf.dll'))) { throw "Installed Qt PDF library is missing" }
+          if (!(Test-Path (Join-Path $installPath 'platforms/qwindows.dll'))) { throw "Installed Qt platform plugin is missing" }
       - uses: actions/upload-artifact@v4
         with:
           name: HEPShelf-windows-x64
-          path: dist/HEPShelf-windows-x64.zip
+          path: |
+            dist/HEPShelf-windows-x64.zip
+            dist/HEPShelf-setup-x64.exe
           if-no-files-found: error

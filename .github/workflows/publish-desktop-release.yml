@@ -6,15 +6,15 @@ on:
       tag:
         description: Existing release tag
         required: true
-        default: v0.9.3
+        default: v0.9.4
       windows_run_id:
         description: Successful Windows build run ID
         required: true
-        default: '36523894508'
+        default: ''
       macos_run_id:
         description: Successful macOS build run ID
         required: true
-        default: '36523894375'
+        default: ''
 
 permissions:
   actions: read
@@ -48,19 +48,21 @@ jobs:
           gh run download "$WINDOWS_RUN_ID" --repo "$GITHUB_REPOSITORY" --name HEPShelf-windows-x64 --dir dist/windows
           gh run download "$MACOS_RUN_ID" --repo "$GITHUB_REPOSITORY" --name HEPShelf-macOS-universal --dir dist/macos
           test -s dist/windows/HEPShelf-windows-x64.zip
+          test -s dist/windows/HEPShelf-setup-x64.exe
           test -s dist/macos/HEPShelf-macOS-universal.dmg
           unzip -t dist/windows/HEPShelf-windows-x64.zip
           unzip -Z1 dist/windows/HEPShelf-windows-x64.zip | grep -q 'HEPShelf/hepshelf.exe'
           unzip -Z1 dist/windows/HEPShelf-windows-x64.zip | grep -q 'HEPShelf/platforms/qwindows.dll'
           unzip -Z1 dist/windows/HEPShelf-windows-x64.zip | grep -q 'HEPShelf/sqldrivers/qsqlite.dll'
+          file dist/windows/HEPShelf-setup-x64.exe | grep -q 'PE32'
           file dist/macos/HEPShelf-macOS-universal.dmg
-          sha256sum dist/windows/HEPShelf-windows-x64.zip dist/macos/HEPShelf-macOS-universal.dmg
+          sha256sum dist/windows/HEPShelf-windows-x64.zip dist/windows/HEPShelf-setup-x64.exe dist/macos/HEPShelf-macOS-universal.dmg
       - name: Add packages and release notes
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
-          gh release upload "$RELEASE_TAG" dist/windows/HEPShelf-windows-x64.zip dist/macos/HEPShelf-macOS-universal.dmg --repo "$GITHUB_REPOSITORY"
+          gh release upload "$RELEASE_TAG" dist/windows/HEPShelf-windows-x64.zip dist/windows/HEPShelf-setup-x64.exe dist/macos/HEPShelf-macOS-universal.dmg --repo "$GITHUB_REPOSITORY"
           gh release edit "$RELEASE_TAG" --notes-file ".github/release-notes-${RELEASE_TAG}.md" --repo "$GITHUB_REPOSITORY"
           gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' --repo "$GITHUB_REPOSITORY"
